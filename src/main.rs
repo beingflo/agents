@@ -16,6 +16,8 @@ fn main() {
     loop {
         scene.draw(&mut renderer);
 
+        scene.circle(0).unwrap().shift((-0.01,0.0));
+
         for e in renderer.display.poll_events() {
             use glium::glutin::Event;
 

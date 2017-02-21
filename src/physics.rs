@@ -57,12 +57,13 @@ impl Circle {
         Circle { pos: pos, r: r}
     }
 
-    pub fn relocate(&mut self, pos: (f32, f32)) {
-        self.pos = pos;
+    pub fn shift(&mut self, pos: (f32, f32)) {
+        self.pos.0 += pos.0;
+        self.pos.1 += pos.1;
     }
 
-    pub fn resize(&mut self, r: f32) {
-        self.r = r;
+    pub fn grow(&mut self, r: f32) {
+        self.r += r;
     }
 }
 
