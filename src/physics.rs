@@ -15,7 +15,7 @@ pub struct Scene {
 
 impl Scene {
     pub fn new(renderer: &Renderer) -> Scene {
-        Scene { circles: (vec![], Mesh::new(MeshKind::CircleMesh, &renderer.display)), program: make_program(&renderer.display) }
+        Scene { circles: (vec![], Mesh::new(MeshKind::Circle, &renderer.display)), program: make_program(&renderer.display) }
     }
 
     pub fn draw(&self, renderer: &mut Renderer) {
@@ -68,7 +68,8 @@ impl Circle {
 }
 
 enum MeshKind {
-    CircleMesh,
+    Circle,
+    Rectangle,
 }
 
 struct Mesh {
@@ -76,10 +77,12 @@ struct Mesh {
     indices: glium::index::NoIndices,
 }
 
+const CIRCLE_RESOLUTION: i32 = 36;
+
 impl Mesh {
     fn new(kind: MeshKind, display: &GlutinFacade) -> Mesh {
         match kind {
-            MeshKind::CircleMesh => {
+            MeshKind::Rectangle => {
                 let p1 = Vertex { position: [-0.1, -0.1] };
                 let p2 = Vertex { position: [-0.1, 0.1] };
                 let p3 = Vertex { position: [0.1, -0.1] };
@@ -87,6 +90,29 @@ impl Mesh {
                 let p5 = Vertex { position: [0.1, 0.1] };
                 let p6 = Vertex { position: [-0.1, 0.1] };
                 let data = vec![p1, p2, p3, p4, p5, p6];
+
+                let vertex_buffer = glium::VertexBuffer::new(display, &data).unwrap();
+                Mesh { vertices: vertex_buffer, indices: glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList) }
+            }
+            MeshKind::Circle => {
+                use std::f32;
+
+                let segment_angle = 2.0*f32::consts::PI / CIRCLE_RESOLUTION as f32;
+
+                let mut data = vec![];
+
+                let mut cur_angle: f32 = 0.0;
+                for _ in 0..CIRCLE_RESOLUTION {
+                    let p1 = Vertex { position: [0.0, 0.0] };
+                    let p2 = Vertex { position: [cur_angle.cos(), cur_angle.sin()] };
+                    let p3 = Vertex { position: [(cur_angle + segment_angle as f32).cos(), (cur_angle + segment_angle as f32).sin()] };
+
+                    data.push(p1);
+                    data.push(p2);
+                    data.push(p3);
+
+                    cur_angle += segment_angle;
+                }
 
                 let vertex_buffer = glium::VertexBuffer::new(display, &data).unwrap();
                 Mesh { vertices: vertex_buffer, indices: glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList) }

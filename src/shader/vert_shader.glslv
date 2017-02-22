@@ -8,5 +8,10 @@ uniform float r;
 
 
 void main() {
-    gl_Position = vec4(position.x - pos_x, position.y - pos_y, 0.0, 1.0);
+    float x_scale = position.x / 10;
+    float y_scale = position.y / 10;
+
+    float x_final = x_scale - pos_x;
+    float y_final = y_scale - pos_y;
+    gl_Position = vec4(x_final, y_final, 0.0, 1.0);
 }
