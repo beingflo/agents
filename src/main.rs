@@ -2,30 +2,30 @@
 extern crate glium;
 
 mod graphics;
-mod physics;
+mod environment;
 
 use graphics::Renderer;
-use physics::{ Scene, Circle };
+use environment::{ Scene, Circle };
 
 fn main() {
     let mut renderer = Renderer::new();
     let mut scene = Scene::new(&renderer);
 
-    scene.add_circle(Circle::new((0.0, 0.0), 0.1));
-    scene.add_circle(Circle::new((0.5, 0.0), 0.1));
+    let handler = scene.add_circle(Circle::new((0.0, 0.0), 0.05));
 
     loop {
+        scene.get_circle(&handler).shift((0.001, 0.0));
+
         scene.draw(&mut renderer);
 
-        scene.circle(0).unwrap().shift((-0.001,0.0));
-        scene.circle(1).unwrap().shift((0.0, -0.001));
-
         for e in renderer.display.poll_events() {
+            use glium::glutin;
             use glium::glutin::Event;
 
             match e {
                 Event::Closed => return,
-                _ => false,
+                Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(glutin::VirtualKeyCode::Q)) => return,
+                _ => (),
             };
         }
     }
