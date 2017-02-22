@@ -17,7 +17,7 @@ pub struct Scene {
     line_mesh: LineMesh,
 }
 
-struct ObjectHandle(usize);
+pub struct ObjectHandle(usize);
 
 impl Scene {
     pub fn new(renderer: &Renderer) -> Scene {
@@ -78,6 +78,14 @@ impl Circle {
         Circle { pos: pos, r: r }
     }
 
+    pub fn get_pos(&self) -> (f32, f32) {
+        self.pos
+    }
+
+    pub fn get_r(&self) -> f32 {
+        self.r
+    }
+
     pub fn shift(&mut self, pos: (f32, f32)) {
         self.pos.0 += pos.0;
         self.pos.1 += pos.1;
@@ -88,8 +96,10 @@ impl Circle {
     }
 
     fn draw(&self, mesh: &CircleMesh, program: &glium::Program, frame: &mut glium::Frame) {
+        let perspective = get_perspective(frame);
+        let model = get_model_circle(self);
         frame.draw(&mesh.vertices, &mesh.indices, program,
-                   &uniform!{  pos_x: self.pos.0, pos_y: self.pos.1, r: self.r }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
     }
 
 }
@@ -115,8 +125,10 @@ impl Line {
     }
 
     fn draw(&self, mesh: &LineMesh, program: &glium::Program, frame: &mut glium::Frame) {
+        let perspective = get_perspective(frame);
+        let model = get_model_line(self);
         frame.draw(&mesh.vertices, &mesh.indices, program,
-                   &uniform!{  pos_x: self.p1.0, pos_y: self.p1.1, r: self.p2.0 }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
     }
 }
 
@@ -171,6 +183,51 @@ impl LineMesh {
     }
 }
 
+fn get_perspective(frame: &glium::Frame) -> [[f32;4]; 4] {
+    let perspective = {
+        let (width, height) = frame.get_dimensions();
+        let ar = height as f32 / width as f32;
+
+        [
+            [ar , 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    };
+
+    perspective
+}
+
+fn get_model_circle(c: &Circle) ->  [[f32;4]; 4] {
+    let model = {
+        [
+            [c.r, 0.0, 0.0, 0.0],
+            [0.0, c.r, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [c.pos.0, c.pos.1, 0.0, 1.0],
+        ]
+    };
+
+    model
+}
+
+fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
+    let model = {
+        let dist_x = l.p1.0 - l.p2.0;
+        let dist_y = l.p1.1 - l.p2.1;
+        let dist = (dist_x*dist_x + dist_y*dist_y).sqrt();
+
+        [
+            [dist, 0.0, 0.0, 0.0],
+            [0.0, dist, 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [l.p1.0, l.p1.1, 0.0, 1.0],
+        ]
+    };
+
+    model
+}
 
 fn make_program(display: &GlutinFacade) -> glium::Program {
     let vertex_shader_src = load_shader("src/shader/vert_shader.glslv");

@@ -5,16 +5,18 @@ mod graphics;
 mod environment;
 
 use graphics::Renderer;
-use environment::{ Scene, Circle };
+use environment::{ Scene, Circle, Line };
 
 fn main() {
     let mut renderer = Renderer::new();
     let mut scene = Scene::new(&renderer);
 
-    let handler = scene.add_circle(Circle::new((0.0, 0.0), 0.05));
+    let handler0 = scene.add_circle(Circle::new((0.0, 0.0), 0.05));
+    let handler1 = scene.add_circle(Circle::new((-0.4, 0.9), 0.05));
+
+    let handler2 = scene.add_line(Line::new((0.0,0.0),(-0.4,0.9)));
 
     loop {
-        scene.get_circle(&handler).shift((0.001, 0.0));
 
         scene.draw(&mut renderer);
 
