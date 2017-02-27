@@ -68,6 +68,7 @@ impl Scene {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Circle {
     pos: (f32, f32),
     r: f32,
@@ -104,6 +105,7 @@ impl Circle {
 
 }
 
+#[derive(Copy, Clone)]
 pub struct Line {
     p1: (f32, f32),
     p2: (f32, f32),
@@ -213,14 +215,19 @@ fn get_model_circle(c: &Circle) ->  [[f32;4]; 4] {
 }
 
 fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
+    use std::f32::consts;
     let model = {
-        let dist_x = l.p1.0 - l.p2.0;
-        let dist_y = l.p1.1 - l.p2.1;
-        let dist = (dist_x*dist_x + dist_y*dist_y).sqrt();
+        let dx = l.p2.0 - l.p1.0;
+        let dy = l.p2.1 - l.p1.1;
+        let dist = (dx*dx + dy*dy).sqrt();
+
+        let angle = 2.0*consts::PI - (dy/dist).abs().acos();
+
+        println!("dx: {}, dy: {}, dist: {}, angle: {}", dx, dy, dist, angle);
 
         [
-            [dist, 0.0, 0.0, 0.0],
-            [0.0, dist, 0.0, 0.0],
+            [dist*angle.cos(), angle.sin(), 0.0, 0.0],
+            [-angle.sin(), dist*angle.cos(), 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [l.p1.0, l.p1.1, 0.0, 1.0],
         ]

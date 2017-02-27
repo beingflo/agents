@@ -11,13 +11,15 @@ fn main() {
     let mut renderer = Renderer::new();
     let mut scene = Scene::new(&renderer);
 
-    let handler0 = scene.add_circle(Circle::new((0.0, 0.0), 0.05));
-    let handler1 = scene.add_circle(Circle::new((-0.4, 0.9), 0.05));
+    let c1 = Circle::new((0.0, 0.0), 0.02);
+    let c2 = Circle::new((0.4, 0.9), 0.02);
 
-    let handler2 = scene.add_line(Line::new((0.0,0.0),(-0.4,0.9)));
+    let handler0 = scene.add_circle(c1);
+    let handler1 = scene.add_circle(c2);
+
+    let handler2 = scene.add_line(Line::new(c1.get_pos(), c2.get_pos()));
 
     loop {
-
         scene.draw(&mut renderer);
 
         for e in renderer.display.poll_events() {
