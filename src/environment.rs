@@ -216,18 +216,20 @@ fn get_model_circle(c: &Circle) ->  [[f32;4]; 4] {
 
 fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
     use std::f32::consts;
+
     let model = {
         let dx = l.p2.0 - l.p1.0;
         let dy = l.p2.1 - l.p1.1;
-        let dist = (dx*dx + dy*dy).sqrt();
+        let d = (dx*dx + dy*dy).sqrt();
 
-        let angle = 2.0*consts::PI - (dy/dist).abs().acos();
+        let angle = (3.0/2.0) * consts::PI + (dx/d).acos();
 
-        println!("dx: {}, dy: {}, dist: {}, angle: {}", dx, dy, dist, angle);
+        println!("p1: {:?}, p2: {:?}", l.p1, l.p2);
+        println!("dx: {}, dy: {}, dist: {}, angle: {}", dx, dy, d, angle);
 
         [
-            [dist*angle.cos(), angle.sin(), 0.0, 0.0],
-            [-angle.sin(), dist*angle.cos(), 0.0, 0.0],
+            [d*angle.cos(), d*angle.sin(), 0.0, 0.0],
+            [-d*angle.sin(), d*angle.cos(), 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [l.p1.0, l.p1.1, 0.0, 1.0],
         ]
