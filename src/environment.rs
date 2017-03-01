@@ -52,20 +52,6 @@ impl Scene {
         self.lines.push(l);
         ObjectHandle(self.lines.len() - 1)
     }
-
-    pub fn get_circle(&mut self, handle: &ObjectHandle) -> &mut Circle {
-        let index = handle.0;
-        assert!(index < self.circles.len());
-
-        &mut self.circles[index]
-    }
-
-    pub fn get_line(&mut self, handle: &ObjectHandle) -> &mut Line {
-        let index = handle.0;
-        assert!(index < self.lines.len());
-
-        &mut self.lines[index]
-    }
 }
 
 #[derive(Copy, Clone)]
@@ -81,19 +67,6 @@ impl Circle {
 
     pub fn get_pos(&self) -> (f32, f32) {
         self.pos
-    }
-
-    pub fn get_r(&self) -> f32 {
-        self.r
-    }
-
-    pub fn shift(&mut self, pos: (f32, f32)) {
-        self.pos.0 += pos.0;
-        self.pos.1 += pos.1;
-    }
-
-    pub fn grow(&mut self, r: f32) {
-        self.r += r;
     }
 
     fn draw(&self, mesh: &CircleMesh, program: &glium::Program, frame: &mut glium::Frame) {
@@ -114,16 +87,6 @@ pub struct Line {
 impl Line {
     pub fn new(p1: (f32, f32), p2: (f32, f32)) -> Self {
         Line { p1: p1, p2: p2 }
-    }
-
-    pub fn set_p1(&mut self, p: (f32, f32)) {
-        self.p1.0 = p.0;
-        self.p1.1 = p.1;
-    }
-
-    pub fn set_p2(&mut self, p: (f32, f32)) {
-        self.p2.0 = p.0;
-        self.p2.1 = p.1;
     }
 
     fn draw(&self, mesh: &LineMesh, program: &glium::Program, frame: &mut glium::Frame) {

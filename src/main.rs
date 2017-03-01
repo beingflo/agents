@@ -17,10 +17,10 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     let mut circles = vec![];
-    for i in 0..100 {
+    for _ in 0..100 {
         let x = 2.0*rng.gen::<f32>()-1.0;
         let y = 2.0*rng.gen::<f32>()-1.0;
-        let c = Circle::new((x, y), 0.02);
+        let c = Circle::new((x, y), 0.01);
         circles.push(c);
         scene.add_circle(c);
     }
