@@ -218,14 +218,28 @@ fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
     use std::f32::consts;
 
     let model = {
-        let dx = l.p2.0 - l.p1.0;
+        let mut dx = l.p2.0 - l.p1.0;
         let dy = l.p2.1 - l.p1.1;
         let d = (dx*dx + dy*dy).sqrt();
 
-        let angle = (3.0/2.0) * consts::PI + (dx/d).acos();
+        if d == 0.0 {
+            dx = 0.0;
+        }
 
-        println!("p1: {:?}, p2: {:?}", l.p1, l.p2);
-        println!("dx: {}, dy: {}, dist: {}, angle: {}", dx, dy, d, angle);
+        let angle_tmp = (dx/d).abs().acos();
+        let mut angle = (3.0/2.0) * consts::PI + angle_tmp;
+
+        if dy < 0.0 {
+            angle -= 2.0*angle_tmp;
+        }
+
+        if dx < 0.0 {
+            angle -= consts::PI + 2.0*angle_tmp;
+        }
+
+        if dy < 0.0 && dx < 0.0 {
+            angle = consts::PI / 2.0 + angle_tmp;
+        }
 
         [
             [d*angle.cos(), d*angle.sin(), 0.0, 0.0],
