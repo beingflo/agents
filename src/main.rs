@@ -3,10 +3,8 @@ extern crate glium;
 extern crate rand;
 
 mod graphics;
-mod environment;
 
-use graphics::Renderer;
-use environment::{ Scene, Circle, Line };
+use graphics::{ Renderer, Scene, Circle, Line };
 
 use rand::Rng;
 
@@ -17,10 +15,10 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     let mut circles = vec![];
-    for _ in 0..100 {
+    for _ in 0..20 {
         let x = 2.0*rng.gen::<f32>()-1.0;
         let y = 2.0*rng.gen::<f32>()-1.0;
-        let c = Circle::new((x, y), 0.01);
+        let c = Circle::new((x, y), 0.02);
         circles.push(c);
         scene.add_circle(c);
     }
@@ -29,17 +27,14 @@ fn main() {
         for j in i..circles.len() {
             let p = rng.gen::<f32>();
 
-            if p > 0.9 {
+            if p > 0.8 {
                 scene.add_line(Line::new(circles[i].get_pos(), circles[j].get_pos()));
             }
         }
     }
 
-    let mut frame = 0;
     loop {
-        frame += 1;
         scene.draw(&mut renderer);
-        println!("frame: {}", frame);
 
         for e in renderer.display.poll_events() {
             use glium::glutin;
