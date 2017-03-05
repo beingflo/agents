@@ -10,10 +10,15 @@ use graphics::Renderer;
 
 fn main() {
     let mut renderer = Renderer::new();
-    let mut network = Network::random(10, 1.0);
+    let mut network = Network::random(50, 0.2);
 
+    let mut frame = 0;
     loop {
+        frame += 1;
+        println!("{}", frame);
+
         network.draw(&mut renderer);
+        network.smooth(0.001);
 
         for e in renderer.display.poll_events() {
             use glium::glutin;

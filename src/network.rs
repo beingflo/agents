@@ -58,6 +58,45 @@ impl Network {
         &mut self.relations[i]
     }
 
+    pub fn smooth(&mut self, dt: f32) {
+        let k = 0.01;
+        let rest = 1.0;
+
+        for i in 0..self.agents.len() {
+            let posi = self.agents[i].pos;
+
+            let mut aggregate_force = (0.0, 0.0);
+
+            for j in self.relations.iter() {
+                if j.source == AgentId(i) {
+                    let posj = self.agents[j.target.0].pos;
+
+                    let dist = ((posj.0 - posi.0).powi(2) + (posj.1 - posi.1).powi(2)).sqrt();
+                    let dir = (posj.0 - posi.0, posj.1 - posi.1);
+
+                    aggregate_force.0 += (dist - rest) * dir.0;
+                    aggregate_force.1 += (dist - rest) * dir.1;
+                }
+                if j.target == AgentId(i) {
+                    let posj = self.agents[j.source.0].pos;
+
+                    let dist = ((posj.0 - posi.0).powi(2) + (posj.1 - posi.1).powi(2)).sqrt();
+                    let dir = (posj.0 - posi.0, posj.1 - posi.1);
+
+                    aggregate_force.0 += (dist - rest) * dir.0;
+                    aggregate_force.1 += (dist - rest) * dir.1;
+                }
+
+            }
+
+            println!("{:?}", aggregate_force);
+
+            aggregate_force.0 *= dt;
+            aggregate_force.1 *= dt;
+
+            self.agents[i].pos = (posi.0 + aggregate_force.0, posi.1 + aggregate_force.1);
+        }
+    }
 
     pub fn draw(&mut self, renderer: &mut Renderer) {
         renderer.begin_frame();
@@ -99,7 +138,7 @@ impl Agent {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct AgentId(usize);
 
 pub struct Relation {
@@ -108,7 +147,7 @@ pub struct Relation {
     color: (f32, f32, f32),
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 pub struct RelationId(usize);
 
 impl Relation {
