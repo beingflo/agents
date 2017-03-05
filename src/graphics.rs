@@ -13,6 +13,7 @@ pub struct Renderer {
     circle_mesh: CircleMesh,
     line_mesh: LineMesh,
 
+    perspective: Option<[[f32; 4]; 4]>,
     frame: Option<glium::Frame>,
 }
 
@@ -27,6 +28,7 @@ impl Renderer {
                     program: program,
                     circle_mesh: circle_mesh,
                     line_mesh: line_mesh,
+                    perspective: None,
                     frame: None }
     }
 
@@ -34,6 +36,7 @@ impl Renderer {
         assert!(self.frame.is_none());
 
         self.frame = Some(self.display.draw());
+        self.perspective = Some(get_perspective(&mut self.frame.as_mut().unwrap()));
     }
 
     pub fn clear_color(&mut self, r: f32, g: f32, b: f32) {
@@ -45,19 +48,17 @@ impl Renderer {
     pub fn draw_circle(&mut self, pos: (f32, f32), r: f32) {
         assert!(self.frame.is_some());
 
-        let perspective = get_perspective(&mut self.frame.as_mut().unwrap());
         let model = get_model_circle(pos, r);
         self.frame.as_mut().unwrap().draw(&self.circle_mesh.vertices, &self.circle_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: self.perspective.unwrap() }, &Default::default()).unwrap();
     }
 
     pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32)) {
         assert!(self.frame.is_some());
 
-        let perspective = get_perspective(&mut self.frame.as_mut().unwrap());
         let model = get_model_line(p1, p2);
         self.frame.as_mut().unwrap().draw(&self.line_mesh.vertices, &self.line_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: self.perspective.unwrap() }, &Default::default()).unwrap();
     }
 
     pub fn end_frame(&mut self) {
@@ -157,32 +158,12 @@ fn get_model_line(p1: (f32, f32), p2: (f32, f32)) ->  [[f32;4]; 4] {
     use std::f32::consts;
 
     let model = {
-        let mut dx = p2.0 - p1.0;
+        let dx = p2.0 - p1.0;
         let dy = p2.1 - p1.1;
-        let d = (dx*dx + dy*dy).sqrt();
-
-        if d == 0.0 {
-            dx = 0.0;
-        }
-
-        let angle_tmp = (dx/d).abs().acos();
-        let mut angle = (3.0/2.0) * consts::PI + angle_tmp;
-
-        if dy < 0.0 {
-            angle -= 2.0*angle_tmp;
-        }
-
-        if dx < 0.0 {
-            angle -= consts::PI + 2.0*angle_tmp;
-        }
-
-        if dy < 0.0 && dx < 0.0 {
-            angle = consts::PI / 2.0 + angle_tmp;
-        }
 
         [
-            [d*angle.cos(), d*angle.sin(), 0.0, 0.0],
-            [-d*angle.sin(), d*angle.cos(), 0.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0],
+            [dx, dy, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
             [p1.0, p1.1, 0.0, 1.0],
         ]
