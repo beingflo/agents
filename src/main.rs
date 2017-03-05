@@ -8,15 +8,46 @@ mod network;
 use network::Network;
 use graphics::Renderer;
 
+const N: usize = 100;
+
 fn main() {
     let mut renderer = Renderer::new();
     let mut network = Network::new();
 
-    for _ in 0..20 {
+    for _ in 0..N {
         network.add_agent();
     }
 
-    for i in 0..20 {
+    add_relations(&mut network);
+
+    let mut frame = 0;
+    loop {
+        frame += 1;
+        println!("{}", frame);
+
+        network.draw(&mut renderer);
+        network.smooth(0.01);
+
+        if frame%20 == 0 {
+            network.remove_relations();
+            add_relations(&mut network);
+        }
+
+        for e in renderer.display.poll_events() {
+            use glium::glutin;
+            use glium::glutin::Event;
+
+            match e {
+                Event::Closed => return,
+                Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(glutin::VirtualKeyCode::Q)) => return,
+                _ => (),
+            };
+        }
+    }
+}
+
+fn add_relations(network: &mut Network) {
+    for i in 0..N {
         let mut min1: f32 = 10.0;
         let mut min1i = 0;
         let mut min2: f32 = 10.0;
@@ -27,7 +58,7 @@ fn main() {
         let mut min4i = 0;
 
         let ai = network.get_agent(i).unwrap().pos;
-        for j in 0..20 {
+        for j in 0..N {
             let aj = network.get_agent(j).unwrap().pos;
             let tmp = ((ai.0 - aj.0).powi(2) + (ai.1 - aj.1).powi(2)).sqrt();
 
@@ -37,7 +68,7 @@ fn main() {
             }
         }
 
-        for j in 0..20 {
+        for j in 0..N {
             let aj = network.get_agent(j).unwrap().pos;
             let tmp = ((ai.0 - aj.0).powi(2) + (ai.1 - aj.1).powi(2)).sqrt();
 
@@ -51,7 +82,7 @@ fn main() {
             }
         }
 
-        for j in 0..20 {
+        for j in 0..N {
             let aj = network.get_agent(j).unwrap().pos;
             let tmp = ((ai.0 - aj.0).powi(2) + (ai.1 - aj.1).powi(2)).sqrt();
 
@@ -65,7 +96,7 @@ fn main() {
             }
         }
 
-        for j in 0..20 {
+        for j in 0..N {
             let aj = network.get_agent(j).unwrap().pos;
             let tmp = ((ai.0 - aj.0).powi(2) + (ai.1 - aj.1).powi(2)).sqrt();
 
@@ -83,25 +114,5 @@ fn main() {
         network.add_relation(i, min2i);
         network.add_relation(i, min3i);
         network.add_relation(i, min4i);
-    }
-
-    let mut frame = 0;
-    loop {
-        frame += 1;
-        println!("{}", frame);
-
-        network.draw(&mut renderer);
-        network.smooth(0.02);
-
-        for e in renderer.display.poll_events() {
-            use glium::glutin;
-            use glium::glutin::Event;
-
-            match e {
-                Event::Closed => return,
-                Event::KeyboardInput(glutin::ElementState::Pressed, _, Some(glutin::VirtualKeyCode::Q)) => return,
-                _ => (),
-            };
-        }
     }
 }

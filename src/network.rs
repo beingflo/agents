@@ -66,6 +66,12 @@ impl Network {
         }
     }
 
+    pub fn remove_relations(&mut self) {
+        for i in self.agents.iter_mut() {
+            i.relations.clear();
+        }
+    }
+
     pub fn smooth(&mut self, dt: f32) {
         let rest = 0.5;
 
