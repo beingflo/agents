@@ -8,12 +8,62 @@ use glium::backend::glutin_backend::GlutinFacade;
 
 pub struct Renderer {
     pub display: GlutinFacade,
+    program: glium::Program,
+
+    circle_mesh: CircleMesh,
+    line_mesh: LineMesh,
+
+    frame: Option<glium::Frame>,
 }
 
 impl Renderer {
     pub fn new() -> Renderer {
         let display = glutin::WindowBuilder::new().build_glium().unwrap();
-        Renderer{ display: display }
+        let circle_mesh = CircleMesh::new(&display);
+        let line_mesh = LineMesh::new(&display);
+        let program = make_program(&display);
+
+        Renderer{   display: display,
+                    program: program,
+                    circle_mesh: circle_mesh,
+                    line_mesh: line_mesh,
+                    frame: None }
+    }
+
+    pub fn begin_frame(&mut self) {
+        assert!(self.frame.is_none());
+
+        self.frame = Some(self.display.draw());
+    }
+
+    pub fn clear_color(&mut self, r: f32, g: f32, b: f32) {
+        assert!(self.frame.is_some());
+
+        self.frame.as_mut().unwrap().clear_color(r, g, b, 0.0);
+    }
+
+    pub fn draw_circle(&mut self, pos: (f32, f32), r: f32) {
+        assert!(self.frame.is_some());
+
+        let perspective = get_perspective(&mut self.frame.as_mut().unwrap());
+        let model = get_model_circle(pos, r);
+        self.frame.as_mut().unwrap().draw(&self.circle_mesh.vertices, &self.circle_mesh.indices, &self.program,
+                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
+    }
+
+    pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32)) {
+        assert!(self.frame.is_some());
+
+        let perspective = get_perspective(&mut self.frame.as_mut().unwrap());
+        let model = get_model_line(p1, p2);
+        self.frame.as_mut().unwrap().draw(&self.line_mesh.vertices, &self.line_mesh.indices, &self.program,
+                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
+    }
+
+    pub fn end_frame(&mut self) {
+        assert!(self.frame.is_some());
+
+        self.frame.take().unwrap().finish().unwrap();
     }
 }
 
@@ -21,97 +71,7 @@ impl Renderer {
 pub struct Vertex {
     pub position: [f32; 2],
 }
-
 implement_vertex!(Vertex, position);
-
-pub struct Scene {
-    circles: Vec<Circle>,
-    lines: Vec<Line>,
-
-    program: glium::Program,
-    circle_mesh: CircleMesh,
-    line_mesh: LineMesh,
-}
-
-pub struct ObjectHandle(usize);
-
-impl Scene {
-    pub fn new(renderer: &Renderer) -> Scene {
-        Scene { circles: vec![],
-                lines: vec![],
-                circle_mesh: CircleMesh::new(&renderer.display),
-                line_mesh: LineMesh::new(&renderer.display),
-                program: make_program(&renderer.display) }
-    }
-
-    pub fn draw(&self, renderer: &mut Renderer) {
-        let mut target = renderer.display.draw();
-        target.clear_color(1.0, 1.0, 1.0, 0.0);
-
-        for c in &self.circles {
-            c.draw(&self.circle_mesh, &self.program, &mut target);
-        }
-
-        for l in &self.lines {
-            l.draw(&self.line_mesh, &self.program, &mut target);
-        }
-
-        target.finish().unwrap();
-    }
-
-    pub fn add_circle(&mut self, c: Circle) -> ObjectHandle {
-        self.circles.push(c);
-        ObjectHandle(self.circles.len() - 1)
-    }
-
-    pub fn add_line(&mut self, l: Line) -> ObjectHandle {
-        self.lines.push(l);
-        ObjectHandle(self.lines.len() - 1)
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct Circle {
-    pos: (f32, f32),
-    r: f32,
-}
-
-impl Circle {
-    pub fn new(pos: (f32, f32), r: f32) -> Self {
-        Circle { pos: pos, r: r }
-    }
-
-    pub fn get_pos(&self) -> (f32, f32) {
-        self.pos
-    }
-
-    fn draw(&self, mesh: &CircleMesh, program: &glium::Program, frame: &mut glium::Frame) {
-        let perspective = get_perspective(frame);
-        let model = get_model_circle(self);
-        frame.draw(&mesh.vertices, &mesh.indices, program,
-                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
-    }
-
-}
-
-#[derive(Copy, Clone)]
-pub struct Line {
-    p1: (f32, f32),
-    p2: (f32, f32),
-}
-
-impl Line {
-    pub fn new(p1: (f32, f32), p2: (f32, f32)) -> Self {
-        Line { p1: p1, p2: p2 }
-    }
-
-    fn draw(&self, mesh: &LineMesh, program: &glium::Program, frame: &mut glium::Frame) {
-        let perspective = get_perspective(frame);
-        let model = get_model_line(self);
-        frame.draw(&mesh.vertices, &mesh.indices, program,
-                   &uniform!{ model: model, perspective: perspective }, &Default::default()).unwrap();
-    }
-}
 
 struct CircleMesh {
     vertices: glium::VertexBuffer<Vertex>,
@@ -180,25 +140,25 @@ fn get_perspective(frame: &glium::Frame) -> [[f32;4]; 4] {
     perspective
 }
 
-fn get_model_circle(c: &Circle) ->  [[f32;4]; 4] {
+fn get_model_circle(pos: (f32, f32), r: f32) ->  [[f32;4]; 4] {
     let model = {
         [
-            [c.r, 0.0, 0.0, 0.0],
-            [0.0, c.r, 0.0, 0.0],
+            [r, 0.0, 0.0, 0.0],
+            [0.0, r, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [c.pos.0, c.pos.1, 0.0, 1.0],
+            [pos.0, pos.1, 0.0, 1.0],
         ]
     };
 
     model
 }
 
-fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
+fn get_model_line(p1: (f32, f32), p2: (f32, f32)) ->  [[f32;4]; 4] {
     use std::f32::consts;
 
     let model = {
-        let mut dx = l.p2.0 - l.p1.0;
-        let dy = l.p2.1 - l.p1.1;
+        let mut dx = p2.0 - p1.0;
+        let dy = p2.1 - p1.1;
         let d = (dx*dx + dy*dy).sqrt();
 
         if d == 0.0 {
@@ -224,7 +184,7 @@ fn get_model_line(l: &Line) ->  [[f32;4]; 4] {
             [d*angle.cos(), d*angle.sin(), 0.0, 0.0],
             [-d*angle.sin(), d*angle.cos(), 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [l.p1.0, l.p1.1, 0.0, 1.0],
+            [p1.0, p1.1, 0.0, 1.0],
         ]
     };
 
