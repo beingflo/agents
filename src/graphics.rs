@@ -50,7 +50,7 @@ impl Renderer {
 
         let model = get_model_circle(pos, r);
         self.frame.as_mut().unwrap().draw(&self.circle_mesh.vertices, &self.circle_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: self.perspective.unwrap() }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: self.perspective.unwrap(), col: color }, &Default::default()).unwrap();
     }
 
     pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32), color: (f32, f32, f32)) {
@@ -58,7 +58,7 @@ impl Renderer {
 
         let model = get_model_line(p1, p2);
         self.frame.as_mut().unwrap().draw(&self.line_mesh.vertices, &self.line_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: self.perspective.unwrap() }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective: self.perspective.unwrap(), col: color }, &Default::default()).unwrap();
     }
 
     pub fn end_frame(&mut self) {
