@@ -45,7 +45,7 @@ impl Renderer {
         self.frame.as_mut().unwrap().clear_color(r, g, b, 0.0);
     }
 
-    pub fn draw_circle(&mut self, pos: (f32, f32), r: f32) {
+    pub fn draw_circle(&mut self, pos: (f32, f32), r: f32, color: (f32, f32, f32)) {
         assert!(self.frame.is_some());
 
         let model = get_model_circle(pos, r);
@@ -53,7 +53,7 @@ impl Renderer {
                    &uniform!{ model: model, perspective: self.perspective.unwrap() }, &Default::default()).unwrap();
     }
 
-    pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32)) {
+    pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32), color: (f32, f32, f32)) {
         assert!(self.frame.is_some());
 
         let model = get_model_line(p1, p2);
@@ -155,8 +155,6 @@ fn get_model_circle(pos: (f32, f32), r: f32) ->  [[f32;4]; 4] {
 }
 
 fn get_model_line(p1: (f32, f32), p2: (f32, f32)) ->  [[f32;4]; 4] {
-    use std::f32::consts;
-
     let model = {
         let dx = p2.0 - p1.0;
         let dy = p2.1 - p1.1;
