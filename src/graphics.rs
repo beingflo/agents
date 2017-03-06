@@ -19,7 +19,8 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let display = glutin::WindowBuilder::new().build_glium().unwrap();
+        //let mut monitors = glutin::get_available_monitors();
+        let display = glutin::WindowBuilder::new()./*with_fullscreen(monitors.next().unwrap()).*/build_glium().unwrap();
         let circle_mesh = CircleMesh::new(&display);
         let line_mesh = LineMesh::new(&display);
         let program = make_program(&display);
