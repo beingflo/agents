@@ -5,6 +5,7 @@ extern crate rand;
 mod graphics;
 mod network;
 mod simulation;
+mod input;
 
 use simulation::Simulation;
 

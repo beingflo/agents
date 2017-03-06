@@ -32,13 +32,11 @@ impl Network {
         network
     }
 
-    pub fn add_agent(&mut self) -> usize { 
+    pub fn add_agent(&mut self) { 
         self.agents.push(Agent::new((get_rand(&mut self.rng, -1.0, 1.0),
                                      get_rand(&mut self.rng, -1.0, 1.0)),
                                     0.02,
                                     (0.0, 0.0, 0.0)));
-
-        self.agents.len()-1
     }
 
     pub fn get_agent(&mut self, a: usize) -> Option<&mut Agent> {
