@@ -4,10 +4,15 @@ use glium::backend::glutin_backend::PollEventsIter as PollEventsIter;
 pub struct InputHandler {
     keyset: [bool; 5],
     mouseset: [bool; 2],
+
     zoom: f32,
 
+    mouse_pos: (i32, i32),
+    mouse_pos_last_pressed: (i32, i32),
+
     key_sensitivity: f32,
-    mouse_sensitivity: f32,
+    mouse_scroll_sensitivity: f32,
+    mouse_move_sensitivity: f32,
 }
 
 pub enum Event {
@@ -18,7 +23,10 @@ pub enum Event {
 
 impl InputHandler {
     pub fn new() -> InputHandler {
-        InputHandler { keyset: [false; 5], mouseset: [false; 2], zoom: 0.0, key_sensitivity: 0.01, mouse_sensitivity: 0.1 }
+        InputHandler {  keyset: [false; 5], mouseset: [false; 2], zoom: 0.0,
+                        mouse_pos: (0,0), mouse_pos_last_pressed: (0,0),
+                        key_sensitivity: 0.01, mouse_scroll_sensitivity: 0.1,
+                        mouse_move_sensitivity: 0.002, }
     }
 
     pub fn handle_events(&mut self, events: PollEventsIter) {
@@ -62,6 +70,7 @@ impl InputHandler {
     }
 
     fn mouse_moved_input(&mut self, x: i32, y: i32) {
+        self.mouse_pos = (x, y);
     }
 
     fn mouse_click_input(&mut self, state: glutin::ElementState, button: glutin::MouseButton) {
@@ -69,9 +78,13 @@ impl InputHandler {
         use glium::glutin::MouseButton as MB;
 
         match (state, button) {
-            (ES::Pressed, MB::Left) => self.mouseset[0] = true,
-            (ES::Released, MB::Left) => self.mouseset[0] = false,
-
+            (ES::Pressed, MB::Left) => {
+                self.mouseset[0] = true;
+                self.mouse_pos_last_pressed = self.mouse_pos;
+            },
+            (ES::Released, MB::Left) => {
+                self.mouseset[0] = false;
+            },
             (ES::Pressed, MB::Right) => self.mouseset[1] = true,
             (ES::Released, MB::Right) => self.mouseset[1] = false,
 
@@ -83,8 +96,8 @@ impl InputHandler {
         use glium::glutin::MouseScrollDelta as MSD;
 
         match delta {
-            MSD::LineDelta(_, y) => self.zoom = self.mouse_sensitivity*y,
-            MSD::PixelDelta(_, y) => self.zoom = self.mouse_sensitivity*y,
+            MSD::LineDelta(_, y) => self.zoom = y,
+            MSD::PixelDelta(_, y) => self.zoom = y,
         }
     }
 
@@ -96,30 +109,31 @@ impl InputHandler {
         }
 
         if self.keyset[1] {
-            events.push(Event::Shift(self.key_sensitivity, 0.0));
-        }
-
-        if self.keyset[2] {
             events.push(Event::Shift(-self.key_sensitivity, 0.0));
         }
 
-        if self.keyset[3] {
-            events.push(Event::Shift(0.0, self.key_sensitivity));
+        if self.keyset[2] {
+            events.push(Event::Shift(self.key_sensitivity, 0.0));
         }
 
-        if self.keyset[4] {
+        if self.keyset[3] {
             events.push(Event::Shift(0.0, -self.key_sensitivity));
         }
 
-        if self.mouseset[0] {
-
+        if self.keyset[4] {
+            events.push(Event::Shift(0.0, self.key_sensitivity));
         }
 
         if self.mouseset[0] {
-
+            let drag = (self.mouse_pos.0 - self.mouse_pos_last_pressed.0,
+                        self.mouse_pos.1 - self.mouse_pos_last_pressed.1);
+            let shift_x = drag.0 as f32 * self.mouse_move_sensitivity;
+            let shift_y = drag.1 as f32 * self.mouse_move_sensitivity;
+            events.push(Event::Shift(shift_x, -shift_y));
+            self.mouse_pos_last_pressed = self.mouse_pos;
         }
 
-        events.push(Event::Zoom(self.zoom));
+        events.push(Event::Zoom(self.zoom*self.mouse_scroll_sensitivity));
         self.zoom = 0.0;
 
         events

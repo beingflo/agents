@@ -80,11 +80,11 @@ impl Renderer {
         for e in events {
             match *e {
                 Event::Shift(x, y) => {
-                    self.view_center.0 += x;    
-                    self.view_center.1 += y;    
+                    self.view_center.0 += x;
+                    self.view_center.1 += y;
                 },
                 Event::Zoom(f) => {
-                    self.zoom += f;
+                    self.zoom += self.zoom*f;
                     if self.zoom < 0.0 {
                         self.zoom = 0.0;
                     }
@@ -161,7 +161,7 @@ fn get_perspective(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> 
             [zoom*ar , 0.0, 0.0, 0.0],
             [0.0, zoom*1.0, 0.0, 0.0],
             [0.0, 0.0, zoom*1.0, 0.0],
-            [-view_center.0, -view_center.1, 0.0, 1.0],
+            [view_center.0, view_center.1, 0.0, 1.0],
         ]
     };
 

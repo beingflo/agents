@@ -33,7 +33,7 @@ impl Simulation {
 
         loop {
             self.network.draw(&mut self.renderer);
-            self.network.smooth(0.1);
+            //self.network.smooth(0.1);
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();
