@@ -3,6 +3,7 @@ use rand::Rng;
 
 use graphics::Renderer;
 
+
 pub struct Network {
     agents: Vec<Agent>,
     rng: rand::ThreadRng,
@@ -71,7 +72,7 @@ impl Network {
     }
 
     pub fn smooth(&mut self, dt: f32) {
-        let rest = 0.5;
+        let rest = 0.8;
 
         for i in 0..self.agents.len() {
             let posi = self.agents[i].pos;
@@ -95,7 +96,7 @@ impl Network {
         }
     }
 
-    pub fn draw(&mut self, renderer: &mut Renderer) {
+    pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
 

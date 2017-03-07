@@ -5,6 +5,8 @@ use std::io::prelude::*;
 use glium::{ self, DisplayBuild, glutin, Surface };
 use glium::backend::glutin_backend::GlutinFacade;
 
+use input::Event;
+
 
 pub struct Renderer {
     pub display: GlutinFacade,
@@ -15,6 +17,9 @@ pub struct Renderer {
 
     perspective: Option<[[f32; 4]; 4]>,
     frame: Option<glium::Frame>,
+
+    zoom: f32,
+    view_center: (f32, f32),
 }
 
 impl Renderer {
@@ -30,14 +35,16 @@ impl Renderer {
                     circle_mesh: circle_mesh,
                     line_mesh: line_mesh,
                     perspective: None,
-                    frame: None }
+                    frame: None,
+                    zoom: 1.0,
+                    view_center: (0.0, 0.0), }
     }
 
     pub fn begin_frame(&mut self) {
         assert!(self.frame.is_none());
 
         self.frame = Some(self.display.draw());
-        self.perspective = Some(get_perspective(&mut self.frame.as_mut().unwrap()));
+        self.perspective = Some(get_perspective(&mut self.frame.as_mut().unwrap(), self.zoom, self.view_center));
     }
 
     pub fn clear_color(&mut self, r: f32, g: f32, b: f32) {
@@ -66,6 +73,22 @@ impl Renderer {
         assert!(self.frame.is_some());
 
         self.frame.take().unwrap().finish().unwrap();
+    }
+
+    pub fn apply_events(&mut self, events: &[Event]) {
+        assert!(self.frame.is_none());
+        for e in events {
+            match *e {
+                Event::Shift(x, y) => {
+                    self.view_center.0 += x;    
+                    self.view_center.1 += y;    
+                },
+                Event::Zoom(f) => {
+                    self.zoom += f;
+                },
+                _ => (),
+            }
+        }
     }
 }
 
@@ -126,7 +149,7 @@ impl LineMesh {
     }
 }
 
-fn get_perspective(frame: &glium::Frame) -> [[f32;4]; 4] {
+fn get_perspective(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> [[f32;4]; 4] {
     let perspective = {
         let (width, height) = frame.get_dimensions();
         let ar = height as f32 / width as f32;
@@ -135,7 +158,7 @@ fn get_perspective(frame: &glium::Frame) -> [[f32;4]; 4] {
             [ar , 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
+            [-view_center.0, -view_center.1, 0.0, 1.0],
         ]
     };
 
