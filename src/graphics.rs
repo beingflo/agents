@@ -161,7 +161,7 @@ fn get_perspective(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> 
             [zoom*ar , 0.0, 0.0, 0.0],
             [0.0, zoom*1.0, 0.0, 0.0],
             [0.0, 0.0, zoom*1.0, 0.0],
-            [view_center.0, view_center.1, 0.0, 1.0],
+            [view_center.0*zoom, view_center.1*zoom, 0.0, 1.0],
         ]
     };
 
