@@ -85,6 +85,9 @@ impl Renderer {
                 },
                 Event::Zoom(f) => {
                     self.zoom += f;
+                    if self.zoom < 0.0 {
+                        self.zoom = 0.0;
+                    }
                 },
                 _ => (),
             }

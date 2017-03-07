@@ -18,7 +18,7 @@ pub enum Event {
 
 impl InputHandler {
     pub fn new() -> InputHandler {
-        InputHandler { keyset: [false; 5], mouseset: [false; 2], zoom: 0.0, key_sensitivity: 0.01, mouse_sensitivity: 0.01 }
+        InputHandler { keyset: [false; 5], mouseset: [false; 2], zoom: 0.0, key_sensitivity: 0.01, mouse_sensitivity: 0.1 }
     }
 
     pub fn handle_events(&mut self, events: PollEventsIter) {
@@ -88,7 +88,7 @@ impl InputHandler {
         }
     }
 
-    pub fn get_events(&self) -> Vec<Event> {
+    pub fn get_events(&mut self) -> Vec<Event> {
         let mut events = Vec::new();
 
         if self.keyset[0] {
@@ -120,6 +120,7 @@ impl InputHandler {
         }
 
         events.push(Event::Zoom(self.zoom));
+        self.zoom = 0.0;
 
         events
     }
