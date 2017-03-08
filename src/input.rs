@@ -25,7 +25,7 @@ impl InputHandler {
     pub fn new() -> InputHandler {
         InputHandler {  keyset: [false; 5], mouseset: [false; 2], zoom: 0.0,
                         mouse_pos: (0,0), mouse_pos_last_pressed: (0,0),
-                        key_sensitivity: 0.01, mouse_scroll_sensitivity: 0.1,
+                        key_sensitivity: 0.01, mouse_scroll_sensitivity: 0.2,
                         mouse_move_sensitivity: 0.002, }
     }
 

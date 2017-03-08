@@ -36,7 +36,7 @@ impl Network {
     pub fn add_agent(&mut self) { 
         self.agents.push(Agent::new((get_rand(&mut self.rng, -10.0, 10.0),
                                      get_rand(&mut self.rng, -10.0, 10.0)),
-                                     0.02,
+                                     0.05,
                                      (0.0, 0.0, 0.0)));
     }
 
@@ -72,7 +72,7 @@ impl Network {
     }
 
     pub fn smooth(&mut self, dt: f32) {
-        let rest = 0.8;
+        let rest = 5.0;
 
         for i in 0..self.agents.len() {
             let posi = self.agents[i].pos;
