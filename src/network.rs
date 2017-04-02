@@ -3,7 +3,6 @@ use rand::Rng;
 
 use graphics::Renderer;
 
-
 pub struct Network {
     agents: Vec<Agent>,
     rng: rand::ThreadRng,
@@ -40,35 +39,8 @@ impl Network {
                                      (0.0, 0.0, 0.0)));
     }
 
-    pub fn get_agent(&mut self, a: usize) -> Option<&mut Agent> {
-        if a < self.agents.len() {
-            return Some(&mut self.agents[a])
-        }
-        None
-    }
-
     pub fn add_relation(&mut self, src: usize, dest: usize) {
         self.agents[src].relations.push(Relation { target: dest, color: (0.0, 0.0, 0.0) });
-    }
-
-    pub fn get_relation(&mut self, a: usize, b: usize) -> Option<&mut Relation> {
-        let mut cnt = None;
-        for (i, r) in self.agents[a].relations.iter().enumerate() {
-            if r.target == b {
-                cnt = Some(i);
-            }
-        }
-        if cnt.is_some() {
-            Some(&mut self.agents[a].relations[cnt.unwrap()])
-        } else {
-            None
-        }
-    }
-
-    pub fn remove_relations(&mut self) {
-        for i in self.agents.iter_mut() {
-            i.relations.clear();
-        }
     }
 
     pub fn smooth(&mut self, dt: f32) {
@@ -109,7 +81,6 @@ impl Network {
 
         renderer.end_frame();
     }
-
 }
 
 fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
@@ -117,7 +88,7 @@ fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
 }
 
 pub struct Agent {
-    pub pos: (f32, f32),
+    pos: (f32, f32),
     r: f32,
     color: (f32, f32, f32),
 
@@ -128,27 +99,9 @@ impl Agent {
     fn new(pos: (f32, f32), r: f32, color: (f32, f32, f32)) -> Agent {
         Agent { pos: pos, r: r, color: color, relations: Vec::new() }
     }
-
-    fn set_color(&mut self, col: (f32, f32, f32)) {
-        self.color = col;
-    }
-
-    fn set_r(&mut self, r: f32) {
-        self.r = r;
-    }
-
-    fn set_pos(&mut self, pos: (f32, f32)) {
-        self.pos = pos;
-    }
 }
 
 pub struct Relation {
     target: usize,
     color: (f32, f32, f32),
-}
-
-impl Relation {
-    fn set_color(&mut self, col: (f32, f32, f32)) {
-        self.color = col;
-    }
 }

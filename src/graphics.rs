@@ -15,7 +15,8 @@ pub struct Renderer {
     circle_mesh: CircleMesh,
     line_mesh: LineMesh,
 
-    perspective: Option<[[f32; 4]; 4]>,
+    perspective_zoom: Option<[[f32; 4]; 4]>,
+    perspective_shift: Option<[[f32; 4]; 4]>,
     frame: Option<glium::Frame>,
 
     zoom: f32,
@@ -34,7 +35,8 @@ impl Renderer {
                     program: program,
                     circle_mesh: circle_mesh,
                     line_mesh: line_mesh,
-                    perspective: None,
+                    perspective_zoom: None,
+                    perspective_shift: None,
                     frame: None,
                     zoom: 0.1,
                     view_center: (0.0, 0.0), }
@@ -44,7 +46,9 @@ impl Renderer {
         assert!(self.frame.is_none());
 
         self.frame = Some(self.display.draw());
-        self.perspective = Some(get_perspective(&mut self.frame.as_mut().unwrap(), self.zoom, self.view_center));
+
+        self.perspective_zoom = Some(get_perspective_zoom(&mut self.frame.as_mut().unwrap(), self.zoom));
+        self.perspective_shift = Some(get_perspective_shift(&mut self.frame.as_mut().unwrap(), self.zoom, self.view_center));
     }
 
     pub fn clear_color(&mut self, r: f32, g: f32, b: f32) {
@@ -58,7 +62,7 @@ impl Renderer {
 
         let model = get_model_circle(pos, r);
         self.frame.as_mut().unwrap().draw(&self.circle_mesh.vertices, &self.circle_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: self.perspective.unwrap(), col: color }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective_zoom: self.perspective_zoom.unwrap(), perspective_shift: self.perspective_shift.unwrap(), col: color }, &Default::default()).unwrap();
     }
 
     pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32), color: (f32, f32, f32)) {
@@ -66,7 +70,7 @@ impl Renderer {
 
         let model = get_model_line(p1, p2);
         self.frame.as_mut().unwrap().draw(&self.line_mesh.vertices, &self.line_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective: self.perspective.unwrap(), col: color }, &Default::default()).unwrap();
+                   &uniform!{ model: model, perspective_zoom: self.perspective_zoom.unwrap(), perspective_shift: self.perspective_shift.unwrap(), col: color }, &Default::default()).unwrap();
     }
 
     pub fn end_frame(&mut self) {
@@ -80,13 +84,14 @@ impl Renderer {
         for e in events {
             match *e {
                 Event::Shift(x, y) => {
-                    self.view_center.0 += x;
-                    self.view_center.1 += y;
+                    // Division by zoom necessary for same sensitivity on every zoom level
+                    self.view_center.0 += x/self.zoom;
+                    self.view_center.1 += y/self.zoom;
                 },
                 Event::Zoom(f) => {
                     self.zoom += self.zoom*f;
-                    if self.zoom < 0.0 {
-                        self.zoom = 0.0;
+                    if self.zoom < 0.01 {
+                        self.zoom = 0.01;
                     }
                 },
                 _ => (),
@@ -152,16 +157,32 @@ impl LineMesh {
     }
 }
 
-fn get_perspective(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> [[f32;4]; 4] {
+fn get_perspective_zoom(frame: &glium::Frame, zoom: f32) -> [[f32;4]; 4] {
     let perspective = {
         let (width, height) = frame.get_dimensions();
         let ar = height as f32 / width as f32;
 
         [
-            [zoom*ar , 0.0, 0.0, 0.0],
-            [0.0, zoom*1.0, 0.0, 0.0],
-            [0.0, 0.0, zoom*1.0, 0.0],
-            [view_center.0*(1.0 + zoom), view_center.1*(1.0 + zoom), 0.0, 1.0],
+            [zoom*ar, 0.0, 0.0, 0.0],
+            [0.0, zoom, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 1.0],
+        ]
+    };
+
+    perspective
+}
+
+fn get_perspective_shift(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> [[f32;4]; 4] {
+    let perspective = {
+        let (width, height) = frame.get_dimensions();
+        let ar = height as f32 / width as f32;
+
+        [
+            [1.0, 0.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [view_center.0*zoom*ar, view_center.1*zoom, 0.0, 1.0],
         ]
     };
 
