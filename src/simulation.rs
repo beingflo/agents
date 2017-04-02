@@ -13,7 +13,8 @@ pub struct Simulation {
 impl Simulation {
     pub fn new() -> Simulation {
         let renderer = Renderer::new();
-        let network = Network::random(20, 0.2);
+        //let network = Network::random(50, 0.1);
+        let network = Network::lattice(100);
         let input = InputHandler::new();
 
         Simulation {
@@ -26,7 +27,7 @@ impl Simulation {
     pub fn run(&mut self) {
         loop {
             self.network.draw(&mut self.renderer);
-            self.network.smooth(0.001);
+            self.network.smooth(0.05);
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();
