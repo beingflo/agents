@@ -2,7 +2,7 @@ use std::fs::File;
 use std::path::Path;
 use std::io::prelude::*;
 
-use glium::{ self, DisplayBuild, glutin, Surface };
+use glium::{self, DisplayBuild, glutin, Surface};
 use glium::backend::glutin_backend::GlutinFacade;
 
 use input::Event;
@@ -25,21 +25,22 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        //let mut monitors = glutin::get_available_monitors();
-        let display = glutin::WindowBuilder::new()./*with_fullscreen(monitors.next().unwrap()).*/build_glium().unwrap();
+        let display = glutin::WindowBuilder::new().build_glium().unwrap();
         let circle_mesh = CircleMesh::new(&display);
         let line_mesh = LineMesh::new(&display);
         let program = make_program(&display);
 
-        Renderer{   display: display,
-                    program: program,
-                    circle_mesh: circle_mesh,
-                    line_mesh: line_mesh,
-                    perspective_zoom: None,
-                    perspective_shift: None,
-                    frame: None,
-                    zoom: 0.1,
-                    view_center: (0.0, 0.0), }
+        Renderer {
+            display: display,
+            program: program,
+            circle_mesh: circle_mesh,
+            line_mesh: line_mesh,
+            perspective_zoom: None,
+            perspective_shift: None,
+            frame: None,
+            zoom: 0.1,
+            view_center: (0.0, 0.0),
+        }
     }
 
     pub fn begin_frame(&mut self) {
@@ -47,8 +48,11 @@ impl Renderer {
 
         self.frame = Some(self.display.draw());
 
-        self.perspective_zoom = Some(get_perspective_zoom(&mut self.frame.as_mut().unwrap(), self.zoom));
-        self.perspective_shift = Some(get_perspective_shift(&mut self.frame.as_mut().unwrap(), self.zoom, self.view_center));
+        self.perspective_zoom = Some(get_perspective_zoom(&mut self.frame.as_mut().unwrap(),
+                                                          self.zoom));
+        self.perspective_shift = Some(get_perspective_shift(&mut self.frame.as_mut().unwrap(),
+                                                            self.zoom,
+                                                            self.view_center));
     }
 
     pub fn clear_color(&mut self, r: f32, g: f32, b: f32) {
@@ -61,16 +65,40 @@ impl Renderer {
         assert!(self.frame.is_some());
 
         let model = get_model_circle(pos, r);
-        self.frame.as_mut().unwrap().draw(&self.circle_mesh.vertices, &self.circle_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective_zoom: self.perspective_zoom.unwrap(), perspective_shift: self.perspective_shift.unwrap(), col: color }, &Default::default()).unwrap();
+        self.frame
+            .as_mut()
+            .unwrap()
+            .draw(&self.circle_mesh.vertices,
+                  &self.circle_mesh.indices,
+                  &self.program,
+                  &uniform!{
+                      model: model,
+                      perspective_zoom: self.perspective_zoom.unwrap(),
+                      perspective_shift: self.perspective_shift.unwrap(),
+                      col: color
+                  },
+                  &Default::default())
+            .unwrap();
     }
 
     pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32), color: (f32, f32, f32)) {
         assert!(self.frame.is_some());
 
         let model = get_model_line(p1, p2);
-        self.frame.as_mut().unwrap().draw(&self.line_mesh.vertices, &self.line_mesh.indices, &self.program,
-                   &uniform!{ model: model, perspective_zoom: self.perspective_zoom.unwrap(), perspective_shift: self.perspective_shift.unwrap(), col: color }, &Default::default()).unwrap();
+        self.frame
+            .as_mut()
+            .unwrap()
+            .draw(&self.line_mesh.vertices,
+                  &self.line_mesh.indices,
+                  &self.program,
+                  &uniform!{
+                      model: model,
+                      perspective_zoom: self.perspective_zoom.unwrap(),
+                      perspective_shift: self.perspective_shift.unwrap(),
+                      col: color
+                  },
+                  &Default::default())
+            .unwrap();
     }
 
     pub fn end_frame(&mut self) {
@@ -85,15 +113,15 @@ impl Renderer {
             match *e {
                 Event::Shift(x, y) => {
                     // Division by zoom necessary for same sensitivity on every zoom level
-                    self.view_center.0 += x/self.zoom;
-                    self.view_center.1 += y/self.zoom;
-                },
+                    self.view_center.0 += x / self.zoom;
+                    self.view_center.1 += y / self.zoom;
+                }
                 Event::Zoom(f) => {
-                    self.zoom += self.zoom*f;
+                    self.zoom += self.zoom * f;
                     if self.zoom < 0.01 {
                         self.zoom = 0.01;
                     }
-                },
+                }
                 _ => (),
             }
         }
@@ -117,7 +145,7 @@ impl CircleMesh {
     fn new(display: &GlutinFacade) -> Self {
         use std::f32;
 
-        let segment_angle = 2.0*f32::consts::PI / CIRCLE_RESOLUTION as f32;
+        let segment_angle = 2.0 * f32::consts::PI / CIRCLE_RESOLUTION as f32;
 
         let mut data = vec![];
 
@@ -125,7 +153,10 @@ impl CircleMesh {
         for _ in 0..CIRCLE_RESOLUTION {
             let p1 = Vertex { position: [0.0, 0.0] };
             let p2 = Vertex { position: [cur_angle.cos(), cur_angle.sin()] };
-            let p3 = Vertex { position: [(cur_angle + segment_angle as f32).cos(), (cur_angle + segment_angle as f32).sin()] };
+            let p3 = Vertex {
+                position: [(cur_angle + segment_angle as f32).cos(),
+                           (cur_angle + segment_angle as f32).sin()],
+            };
 
             data.push(p1);
             data.push(p2);
@@ -135,7 +166,10 @@ impl CircleMesh {
         }
 
         let vertex_buffer = glium::VertexBuffer::new(display, &data).unwrap();
-        CircleMesh { vertices: vertex_buffer, indices: glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList) }
+        CircleMesh {
+            vertices: vertex_buffer,
+            indices: glium::index::NoIndices(glium::index::PrimitiveType::TrianglesList),
+        }
     }
 }
 
@@ -153,27 +187,33 @@ impl LineMesh {
 
         let vertex_buffer = glium::VertexBuffer::new(display, &data).unwrap();
 
-        LineMesh { vertices: vertex_buffer, indices: glium::index::NoIndices(glium::index::PrimitiveType::LinesList) }
+        LineMesh {
+            vertices: vertex_buffer,
+            indices: glium::index::NoIndices(glium::index::PrimitiveType::LinesList),
+        }
     }
 }
 
-fn get_perspective_zoom(frame: &glium::Frame, zoom: f32) -> [[f32;4]; 4] {
+fn get_perspective_zoom(frame: &glium::Frame, zoom: f32) -> [[f32; 4]; 4] {
     let perspective = {
         let (width, height) = frame.get_dimensions();
         let ar = height as f32 / width as f32;
 
         [
-            [zoom*ar, 0.0, 0.0, 0.0],
+            [zoom * ar, 0.0, 0.0, 0.0],
             [0.0, zoom, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [0.0, 0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.0, 1.0]
         ]
     };
 
     perspective
 }
 
-fn get_perspective_shift(frame: &glium::Frame, zoom: f32, view_center: (f32, f32)) -> [[f32;4]; 4] {
+fn get_perspective_shift(frame: &glium::Frame,
+                         zoom: f32,
+                         view_center: (f32, f32))
+                         -> [[f32; 4]; 4] {
     let perspective = {
         let (width, height) = frame.get_dimensions();
         let ar = height as f32 / width as f32;
@@ -182,27 +222,27 @@ fn get_perspective_shift(frame: &glium::Frame, zoom: f32, view_center: (f32, f32
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [view_center.0*zoom*ar, view_center.1*zoom, 0.0, 1.0],
+            [view_center.0 * zoom * ar, view_center.1 * zoom, 0.0, 1.0]
         ]
     };
 
     perspective
 }
 
-fn get_model_circle(pos: (f32, f32), r: f32) ->  [[f32;4]; 4] {
+fn get_model_circle(pos: (f32, f32), r: f32) -> [[f32; 4]; 4] {
     let model = {
         [
             [r, 0.0, 0.0, 0.0],
             [0.0, r, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [pos.0, pos.1, 0.0, 1.0],
+            [pos.0, pos.1, 0.0, 1.0]
         ]
     };
 
     model
 }
 
-fn get_model_line(p1: (f32, f32), p2: (f32, f32)) ->  [[f32;4]; 4] {
+fn get_model_line(p1: (f32, f32), p2: (f32, f32)) -> [[f32; 4]; 4] {
     let model = {
         let dx = p2.0 - p1.0;
         let dy = p2.1 - p1.1;
@@ -211,7 +251,7 @@ fn get_model_line(p1: (f32, f32), p2: (f32, f32)) ->  [[f32;4]; 4] {
             [0.0, 0.0, 0.0, 0.0],
             [dx, dy, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [p1.0, p1.1, 0.0, 1.0],
+            [p1.0, p1.1, 0.0, 1.0]
         ]
     };
 
@@ -222,8 +262,7 @@ fn make_program(display: &GlutinFacade) -> glium::Program {
     let vertex_shader_src = load_shader("src/shader/vert_shader.glslv");
     let fragment_shader_src = load_shader("src/shader/frag_shader.glslf");
 
-    glium::Program::from_source(display, &vertex_shader_src,
-                                &fragment_shader_src, None).unwrap()
+    glium::Program::from_source(display, &vertex_shader_src, &fragment_shader_src, None).unwrap()
 }
 
 fn load_shader(file: &str) -> String {

@@ -10,7 +10,10 @@ pub struct Network {
 
 impl Network {
     pub fn new() -> Network {
-        Network { agents: Vec::new(), rng: rand::thread_rng() }
+        Network {
+            agents: Vec::new(),
+            rng: rand::thread_rng(),
+        }
     }
 
     pub fn random(n: usize, p: f32) -> Network {
@@ -32,15 +35,18 @@ impl Network {
         network
     }
 
-    pub fn add_agent(&mut self) { 
+    pub fn add_agent(&mut self) {
         self.agents.push(Agent::new((get_rand(&mut self.rng, -10.0, 10.0),
                                      get_rand(&mut self.rng, -10.0, 10.0)),
-                                     0.05,
-                                     (0.0, 0.0, 0.0)));
+                                    0.05,
+                                    (0.0, 0.0, 0.0)));
     }
 
     pub fn add_relation(&mut self, src: usize, dest: usize) {
-        self.agents[src].relations.push(Relation { target: dest, color: (0.0, 0.0, 0.0) });
+        self.agents[src].relations.push(Relation {
+            target: dest,
+            color: (0.0, 0.0, 0.0),
+        });
     }
 
     pub fn smooth(&mut self, dt: f32) {
@@ -84,7 +90,7 @@ impl Network {
 }
 
 fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
-    (b-a) * rng.gen::<f32>() + a
+    (b - a) * rng.gen::<f32>() + a
 }
 
 pub struct Agent {
@@ -97,7 +103,12 @@ pub struct Agent {
 
 impl Agent {
     fn new(pos: (f32, f32), r: f32, color: (f32, f32, f32)) -> Agent {
-        Agent { pos: pos, r: r, color: color, relations: Vec::new() }
+        Agent {
+            pos: pos,
+            r: r,
+            color: color,
+            relations: Vec::new(),
+        }
     }
 }
 

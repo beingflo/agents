@@ -16,7 +16,11 @@ impl Simulation {
         let network = Network::random(20, 0.2);
         let input = InputHandler::new();
 
-        Simulation { renderer: renderer, network: network, input: input }
+        Simulation {
+            renderer: renderer,
+            network: network,
+            input: input,
+        }
     }
 
     pub fn run(&mut self) {
