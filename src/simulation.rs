@@ -1,19 +1,20 @@
 use graphics::Renderer;
 use network::Network;
+use network::AbstractComponent;
 use input::InputHandler;
 
 use input::Event;
 
 pub struct Simulation {
     renderer: Renderer,
-    network: Network,
+    network: Network<MarketComponent>,
     input: InputHandler,
 }
 
 impl Simulation {
     pub fn new() -> Simulation {
         let mut network = Network::random(100, 0.02);
-        //let network = Network::lattice(100);
+        //let mut network = Network::lattice(100);
         network.smooth_till_rest(0.05, 30.0, 1_000);
 
         let renderer = Renderer::new();
@@ -51,3 +52,15 @@ impl Simulation {
         false
     }
 }
+
+struct MarketComponent {
+    ph: i32,
+}
+
+impl AbstractComponent for MarketComponent {
+    fn new() -> Self {
+        MarketComponent { ph: 0 }
+    }
+}
+
+

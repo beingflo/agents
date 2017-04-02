@@ -3,20 +3,20 @@ use rand::Rng;
 
 use graphics::Renderer;
 
-pub struct Network {
-    agents: Vec<Agent>,
+pub struct Network<T: AbstractComponent> {
+    agents: Vec<Agent<T>>,
     rng: rand::ThreadRng,
 }
 
-impl Network {
-    pub fn new() -> Network {
+impl<T: AbstractComponent> Network<T> {
+    pub fn new() -> Network<T> {
         Network {
             agents: Vec::new(),
             rng: rand::thread_rng(),
         }
     }
 
-    pub fn lattice(n: usize) -> Network {
+    pub fn lattice(n: usize) -> Network<T> {
         let mut rng = rand::thread_rng();
         let mut network = Network::new();
 
@@ -26,7 +26,7 @@ impl Network {
             for j in 0..side {
                 let p1 = get_rand(&mut rng, -0.2, 0.2);
                 let p2 = get_rand(&mut rng, -0.2, 0.2);
-                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.1, (0.0, 0.0, 0.0)));
+                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.1, (0.0, 0.0, 0.0), T::new()));
             }
         }
 
@@ -42,7 +42,7 @@ impl Network {
         network
     }
 
-    pub fn random(n: usize, p: f32) -> Network {
+    pub fn random(n: usize, p: f32) -> Network<T> {
         let mut rng = rand::thread_rng();
         let mut network = Network::new();
 
@@ -66,7 +66,8 @@ impl Network {
                                         get_rand(&mut self.rng, -10.0, 10.0)
                                     ),
                                     0.1,
-                                    (0.0, 0.0, 0.0)
+                                    (0.0, 0.0, 0.0),
+                                    T::new()
                                     )
                          );
     }
@@ -117,7 +118,7 @@ impl Network {
         let low = 0.1;
 
         // Centering coefficient
-        let cent = 0.2;
+        let cent = 0.05;
 
         for i in 0..self.agents.len() {
             let posi = self.agents[i].physics.pos;
@@ -193,9 +194,13 @@ fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
     (b - a) * rng.gen::<f32>() + a
 }
 
-pub struct Agent {
+pub trait AbstractComponent {
+    fn new() -> Self;
+}
+
+pub struct Agent<T: AbstractComponent> {
     physics: PhysicsComponent,
-    property: AbstractComponent,
+    property: T,
 
     relations: Vec<Relation>,
 }
@@ -219,21 +224,9 @@ impl PhysicsComponent {
 
 }
 
-struct AbstractComponent {
-    ph: i32,
-}
-
-impl AbstractComponent {
-    fn new() -> AbstractComponent {
-        AbstractComponent { ph: 0 }
-    }
-}
-
-
-impl Agent {
-    fn new(pos: (f32, f32), r: f32, color: (f32, f32, f32)) -> Agent {
+impl<T: AbstractComponent> Agent<T> {
+    fn new(pos: (f32, f32), r: f32, color: (f32, f32, f32), ac: T) -> Agent<T> {
         let pc = PhysicsComponent::new(pos, (0.0, 0.0), r, color);
-        let ac = AbstractComponent::new();
 
         Agent {
             physics: pc,
