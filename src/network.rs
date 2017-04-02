@@ -82,15 +82,19 @@ impl Network {
         let mut step = 0;
         while total_vel > thresh && step < max {
             self.smooth(dt);
-
-            total_vel = 0.0;
-            for i in self.agents.iter() {
-                total_vel += i.vel.0.abs();
-                total_vel += i.vel.1.abs();
-            }
-
+            total_vel = self.total_vel();
             step += 1;
         }
+
+    }
+
+    fn total_vel(&self) -> f32 {
+        let mut total_vel = 0.0;
+        for i in self.agents.iter() {
+            total_vel += i.vel.0.abs();
+            total_vel += i.vel.1.abs();
+        }
+        total_vel
     }
 
     // Force driven smoothing using spring forces to keep 
