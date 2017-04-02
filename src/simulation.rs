@@ -12,10 +12,13 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Simulation {
+        let mut network = Network::random(100, 0.02);
+        //let network = Network::lattice(100);
+        network.smooth_till_rest(0.05, 30.0, 1_000);
+
         let renderer = Renderer::new();
-        //let network = Network::random(50, 0.1);
-        let network = Network::lattice(100);
         let input = InputHandler::new();
+
 
         Simulation {
             renderer: renderer,

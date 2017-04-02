@@ -76,6 +76,23 @@ impl Network {
         self.agents[dest].relations.push(Relation::new(src, (0.0, 0.0, 0.0)));
     }
 
+    pub fn smooth_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
+        let mut total_vel = 2.0*thresh;
+
+        let mut step = 0;
+        while total_vel > thresh && step < max {
+            self.smooth(dt);
+
+            total_vel = 0.0;
+            for i in self.agents.iter() {
+                total_vel += i.vel.0.abs();
+                total_vel += i.vel.1.abs();
+            }
+
+            step += 1;
+        }
+    }
+
     // Force driven smoothing using spring forces to keep 
     // adjacent vertices at a constant distance and coulomb 
     // force to keep non-adjacent vertices from clustering
