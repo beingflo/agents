@@ -4,18 +4,19 @@ use network::AbstractComponent;
 use input::InputHandler;
 
 use input::Event;
+use rand;
+use rand::Rng;
 
 pub struct Simulation {
     renderer: Renderer,
-    network: Network<MarketComponent>,
+    network: Network<LogicComponent>,
     input: InputHandler,
 }
 
 impl Simulation {
     pub fn new() -> Simulation {
         let mut network = Network::random(100, 0.02);
-        //let mut network = Network::lattice(100);
-        network.smooth_till_rest(0.05, 30.0, 1_000);
+        network.physics_tick_till_rest(0.05, 30.0, 1_000);
 
         let renderer = Renderer::new();
         let input = InputHandler::new();
@@ -31,7 +32,7 @@ impl Simulation {
     pub fn run(&mut self) {
         loop {
             self.network.draw(&mut self.renderer);
-            self.network.smooth(0.05);
+            self.network.physics_tick(0.05);
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();
@@ -53,14 +54,29 @@ impl Simulation {
     }
 }
 
-struct MarketComponent {
-    ph: i32,
+#[derive(Copy, Clone)]
+enum ProductionType {
+    Hunter,
+    Gatherer,
 }
 
-impl AbstractComponent for MarketComponent {
-    fn new() -> Self {
-        MarketComponent { ph: 0 }
+#[derive(Copy, Clone)]
+struct LogicComponent {
+    ptype: ProductionType,
+
+    plant_amount: u32,
+    meat_amount: u32,
+}
+
+impl AbstractComponent for LogicComponent {
+    fn new(rng: &mut rand::ThreadRng) -> Self {
+        let p = rng.gen::<f32>();
+        let ptype = if p > 0.5 {
+            ProductionType::Hunter
+        } else {
+            ProductionType::Gatherer
+        };
+
+        LogicComponent { ptype: ptype, plant_amount: 100, meat_amount: 100 }
     }
 }
-
-

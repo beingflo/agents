@@ -17,16 +17,15 @@ impl<T: AbstractComponent> Network<T> {
     }
 
     pub fn lattice(n: usize) -> Network<T> {
-        let mut rng = rand::thread_rng();
         let mut network = Network::new();
 
         let side = (n as f64).sqrt() as i32;
 
         for i in 0..side {
             for j in 0..side {
-                let p1 = get_rand(&mut rng, -0.2, 0.2);
-                let p2 = get_rand(&mut rng, -0.2, 0.2);
-                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.1, (0.0, 0.0, 0.0), T::new()));
+                let p1 = get_rand(&mut network.rng, -0.2, 0.2);
+                let p2 = get_rand(&mut network.rng, -0.2, 0.2);
+                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.1, (0.0, 0.0, 0.0), T::new(&mut network.rng)));
             }
         }
 
@@ -43,7 +42,6 @@ impl<T: AbstractComponent> Network<T> {
     }
 
     pub fn random(n: usize, p: f32) -> Network<T> {
-        let mut rng = rand::thread_rng();
         let mut network = Network::new();
 
         for _ in 0..n {
@@ -52,7 +50,7 @@ impl<T: AbstractComponent> Network<T> {
 
         for i in 0..n {
             for j in i+1..n {
-                if get_rand(&mut rng, 0.0, 1.0) < p {
+                if get_rand(&mut network.rng, 0.0, 1.0) < p {
                     network.add_relation(i, j);
                 }
             }
@@ -67,7 +65,7 @@ impl<T: AbstractComponent> Network<T> {
                                     ),
                                     0.1,
                                     (0.0, 0.0, 0.0),
-                                    T::new()
+                                    T::new(&mut self.rng)
                                     )
                          );
     }
@@ -77,12 +75,12 @@ impl<T: AbstractComponent> Network<T> {
         self.agents[dest].relations.push(Relation::new(src, (0.0, 0.0, 0.0)));
     }
 
-    pub fn smooth_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
+    pub fn physics_tick_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
         let mut total_vel = 2.0*thresh;
 
         let mut step = 0;
         while total_vel > thresh && step < max {
-            self.smooth(dt);
+            self.physics_tick(dt);
             total_vel = self.total_vel();
             step += 1;
         }
@@ -101,7 +99,7 @@ impl<T: AbstractComponent> Network<T> {
     // Force driven smoothing using spring forces to keep 
     // adjacent vertices at a constant distance and coulomb 
     // force to keep non-adjacent vertices from clustering
-    pub fn smooth(&mut self, dt: f32) {
+    pub fn physics_tick(&mut self, dt: f32) {
         // Rest length of springs
         let rest = 1.0;
 
@@ -175,6 +173,26 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
+    pub fn logic_tick<F>(&mut self, update: F) where F: Fn(Vec<T>) -> T {
+        // TODO shuffle
+
+        for i in 0..self.agents.len() {
+            let mut neigh = Vec::new();
+            let num_neigh = self.agents[i].relations.len();
+
+            for j in 0..num_neigh {
+                let index = self.agents[i].relations[j].target;
+
+                neigh.push(self.agents[index].logic);
+            }
+
+            let new_logic = update(neigh);
+
+            self.agents[i].logic = new_logic;
+        }
+
+    }
+
     pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
@@ -194,17 +212,31 @@ fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
     (b - a) * rng.gen::<f32>() + a
 }
 
-pub trait AbstractComponent {
-    fn new() -> Self;
+pub trait AbstractComponent : Copy {
+    fn new(&mut rand::ThreadRng) -> Self;
 }
 
+#[derive(Clone)]
 pub struct Agent<T: AbstractComponent> {
     physics: PhysicsComponent,
-    property: T,
+    logic: T,
 
     relations: Vec<Relation>,
 }
 
+#[derive(Copy, Clone)]
+pub struct Relation {
+    target: usize,
+    color: (f32, f32, f32),
+}
+
+impl Relation {
+    fn new(target: usize, color: (f32, f32, f32)) -> Relation {
+        Relation { target: target, color: color }
+    }
+}
+
+#[derive(Copy, Clone)]
 struct PhysicsComponent {
     pos: (f32, f32),
     vel: (f32, f32),
@@ -230,20 +262,9 @@ impl<T: AbstractComponent> Agent<T> {
 
         Agent {
             physics: pc,
-            property: ac,
+            logic: ac,
             
             relations: Vec::new(),
         }
-    }
-}
-
-pub struct Relation {
-    target: usize,
-    color: (f32, f32, f32),
-}
-
-impl Relation {
-    fn new(target: usize, color: (f32, f32, f32)) -> Relation {
-        Relation { target: target, color: color }
     }
 }
