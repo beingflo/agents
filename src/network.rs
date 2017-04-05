@@ -1,5 +1,6 @@
 use rand;
 use rand::Rng;
+use std::rc::Rc;
 
 use graphics::Renderer;
 
@@ -173,7 +174,7 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
-    pub fn logic_tick<F>(&mut self, update: F) where F: Fn(Vec<T>) -> T {
+    pub fn logic_tick<F>(&mut self, update: F) where F: Fn(Vec<Rc<T>>) -> T {
         // TODO shuffle
 
         for i in 0..self.agents.len() {
@@ -183,12 +184,12 @@ impl<T: AbstractComponent> Network<T> {
             for j in 0..num_neigh {
                 let index = self.agents[i].relations[j].target;
 
-                neigh.push(self.agents[index].logic);
+                neigh.push(self.agents[index].logic.clone());
             }
 
             let new_logic = update(neigh);
 
-            self.agents[i].logic = new_logic;
+            self.agents[i].logic = Rc::new(new_logic);
         }
 
     }
@@ -219,7 +220,7 @@ pub trait AbstractComponent : Copy {
 #[derive(Clone)]
 pub struct Agent<T: AbstractComponent> {
     physics: PhysicsComponent,
-    logic: T,
+    logic: Rc<T>,
 
     relations: Vec<Relation>,
 }
@@ -262,7 +263,7 @@ impl<T: AbstractComponent> Agent<T> {
 
         Agent {
             physics: pc,
-            logic: ac,
+            logic: Rc::new(ac),
             
             relations: Vec::new(),
         }
