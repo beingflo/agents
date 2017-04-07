@@ -174,11 +174,17 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
-    pub fn logic_tick<F>(&mut self, update: F) where F: Fn(&RefCell<T>, Vec<&RefCell<T>>) -> T {
+    pub fn logic_tick<F>(&mut self, set_logic: &F) where F: Fn(&RefCell<T>, Vec<&RefCell<T>>) {
         // TODO shuffle order
 
         for a in self.agents.iter() {
-            update(&a.logic, a.relations.iter().map(|r| &(self.agents[r.target].logic)).collect::<Vec<&RefCell<T>>>());
+            set_logic(&a.logic, a.relations.iter().map(|r| &(self.agents[r.target].logic)).collect::<Vec<&RefCell<T>>>());
+        }
+    }
+
+    pub fn set_appearance<F>(&mut self, set_appearance: &F) where F: Fn(&T, &mut PhysicsComponent) {
+        for a in self.agents.iter_mut() {
+            set_appearance(&a.logic.borrow(), &mut a.physics);
         }
     }
 
@@ -226,11 +232,11 @@ impl Relation {
 }
 
 #[derive(Copy, Clone)]
-struct PhysicsComponent {
+pub struct PhysicsComponent {
     pos: (f32, f32),
     vel: (f32, f32),
-    r: f32,
-    color: (f32, f32, f32),
+    pub r: f32,
+    pub color: (f32, f32, f32),
 }
 
 impl PhysicsComponent {

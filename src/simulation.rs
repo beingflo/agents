@@ -1,11 +1,14 @@
 use graphics::Renderer;
 use network::Network;
 use network::AbstractComponent;
+use network::PhysicsComponent;
 use input::InputHandler;
 
 use input::Event;
 use rand;
 use rand::Rng;
+
+use std::cell::RefCell;
 
 pub struct Simulation {
     renderer: Renderer,
@@ -30,9 +33,21 @@ impl Simulation {
     }
 
     pub fn run(&mut self) {
+        let set_logic = |a: &RefCell<LogicComponent>, bs: Vec<&RefCell<LogicComponent>>| {
+            a.borrow_mut().color.0 += 0.0001;
+        };
+
+        let set_appearance = |a: &LogicComponent, b: &mut PhysicsComponent| {
+            b.color = a.color;
+        };
+
         loop {
             self.network.draw(&mut self.renderer);
+
             self.network.physics_tick(0.05);
+            self.network.logic_tick(&set_logic);
+
+            self.network.set_appearance(&set_appearance);
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();
@@ -64,6 +79,7 @@ enum ProductionType {
 struct LogicComponent {
     ptype: ProductionType,
 
+    color: (f32, f32, f32),
     plant_amount: u32,
     meat_amount: u32,
 }
@@ -77,6 +93,6 @@ impl AbstractComponent for LogicComponent {
             ProductionType::Gatherer
         };
 
-        LogicComponent { ptype: ptype, plant_amount: 100, meat_amount: 100 }
+        LogicComponent { ptype: ptype, plant_amount: 100, meat_amount: 100, color: (0.0, 0.0, 0.0) }
     }
 }
