@@ -34,7 +34,12 @@ impl Simulation {
 
     pub fn run(&mut self) {
         let set_logic = |a: &RefCell<LogicComponent>, bs: Vec<&RefCell<LogicComponent>>| {
-            a.borrow_mut().color.0 += 0.0001;
+            let mut ab = a.borrow_mut();
+            if ab.ptype == ProductionType::Hunter {
+                ab.color.0 += 0.002;
+            } else {
+                ab.color.1 += 0.002;
+            }
         };
 
         let set_appearance = |a: &LogicComponent, b: &mut PhysicsComponent| {
@@ -69,7 +74,7 @@ impl Simulation {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 enum ProductionType {
     Hunter,
     Gatherer,
