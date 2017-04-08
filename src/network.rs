@@ -26,7 +26,7 @@ impl<T: AbstractComponent> Network<T> {
             for j in 0..side {
                 let p1 = get_rand(&mut network.rng, -0.2, 0.2);
                 let p2 = get_rand(&mut network.rng, -0.2, 0.2);
-                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.1, (0.0, 0.0, 0.0), T::new(&mut network.rng)));
+                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.25, (0.0, 0.0, 0.0), T::new(&mut network.rng)));
             }
         }
 
@@ -64,7 +64,7 @@ impl<T: AbstractComponent> Network<T> {
         self.agents.push(Agent::new((   get_rand(&mut self.rng, -10.0, 10.0),
                                         get_rand(&mut self.rng, -10.0, 10.0)
                                     ),
-                                    0.1,
+                                    0.25,
                                     (0.0, 0.0, 0.0),
                                     T::new(&mut self.rng)
                                     )
@@ -192,12 +192,12 @@ impl<T: AbstractComponent> Network<T> {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
 
-        self.agents.iter().map(|ref a| renderer.draw_circle(a.physics.pos, a.physics.r, a.physics.color)).count();
         for i in self.agents.iter() {
             for j in i.relations.iter() {
                 renderer.draw_line(i.physics.pos, self.agents[j.target].physics.pos, j.color);
             }
         }
+        self.agents.iter().map(|ref a| renderer.draw_circle(a.physics.pos, a.physics.r, a.physics.color)).count();
 
         renderer.end_frame();
     }

@@ -8,6 +8,7 @@ use input::Event;
 use rand;
 use rand::Rng;
 
+use std::cmp;
 use std::cell::RefCell;
 
 pub struct Simulation {
@@ -33,17 +34,74 @@ impl Simulation {
     }
 
     pub fn run(&mut self) {
-        let set_logic = |a: &RefCell<LogicComponent>, bs: Vec<&RefCell<LogicComponent>>| {
-            let mut ab = a.borrow_mut();
-            if ab.ptype == ProductionType::Hunter {
-                ab.color.0 += 0.002;
-            } else {
-                ab.color.1 += 0.002;
+        let set_logic = |aref: &RefCell<LogicComponent>, bs: Vec<&RefCell<LogicComponent>>| {
+            let mut a = aref.borrow_mut();
+
+            if !a.alive {
+                return;
             }
+
+            // Death
+            if a.meat <= 0 || a.plant <= 0 {
+                a.alive = false;
+                return;
+            }
+
+            // Consumption
+            a.meat -= 1;
+            a.plant -= 1;
+
+            // Production
+            if a.ptype == ProductionType::Hunter {
+                a.meat += 2;
+            } else {
+                a.plant += 2;
+            }
+
+            for bref in bs.iter() {
+                let mut b = bref.borrow_mut();
+
+                if !b.alive {
+                    continue;
+                }
+
+                if b.meat > a.meat && a.plant > b.plant {
+                    let min = cmp::min(b.meat-a.meat, a.plant-b.plant);
+
+                    b.meat -= min;
+                    a.meat += min;
+
+                    a.plant -= min;
+                    b.plant += min;
+
+                    break;
+                }
+
+                if a.meat > b.meat && b.plant > a.plant {
+                    let min = cmp::min(a.meat-b.meat, b.plant-a.plant);
+
+                    a.meat -= min;
+                    b.meat += min;
+
+                    b.plant -= min;
+                    a.plant += min;
+
+                    break;
+                }
+            }
+
         };
 
         let set_appearance = |a: &LogicComponent, b: &mut PhysicsComponent| {
-            b.color = a.color;
+            b.color = if a.ptype == ProductionType::Hunter {
+                (0.5117, 0.168, 0.2422)
+            } else {
+                (0.0, 0.2422, 0.1836)
+            };
+
+            if !a.alive {
+                b.color = (0.0, 0.0, 0.0);
+            }
         };
 
         loop {
@@ -74,19 +132,20 @@ impl Simulation {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 enum ProductionType {
     Hunter,
     Gatherer,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct LogicComponent {
     ptype: ProductionType,
 
-    color: (f32, f32, f32),
-    plant_amount: u32,
-    meat_amount: u32,
+    plant: u32,
+    meat: u32,
+
+    alive: bool,
 }
 
 impl AbstractComponent for LogicComponent {
@@ -98,6 +157,6 @@ impl AbstractComponent for LogicComponent {
             ProductionType::Gatherer
         };
 
-        LogicComponent { ptype: ptype, plant_amount: 100, meat_amount: 100, color: (0.0, 0.0, 0.0) }
+        LogicComponent { ptype: ptype, plant: 100, meat: 100, alive: true }
     }
 }
