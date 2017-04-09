@@ -94,9 +94,9 @@ impl Simulation {
 
         let set_appearance = |a: &LogicComponent, b: &mut PhysicsComponent| {
             b.color = if a.ptype == ProductionType::Hunter {
-                (0.5117, 0.168, 0.2422)
+                (0.9, 0.08, 0.04)
             } else {
-                (0.0, 0.2422, 0.1836)
+                (0.0, 0.6, 0.1)
             };
 
             if !a.alive {
