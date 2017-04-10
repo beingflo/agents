@@ -4,6 +4,7 @@ use glium::backend::glutin_backend::PollEventsIter;
 pub struct InputHandler {
     keyset: [bool; 5],
     mouseset: [bool; 2],
+    space: bool,
 
     zoom: f32,
 
@@ -17,6 +18,7 @@ pub struct InputHandler {
 
 pub enum Event {
     Quit,
+    Start,
     Shift(f32, f32),
     Zoom(f32),
 }
@@ -26,6 +28,7 @@ impl InputHandler {
         InputHandler {
             keyset: [false; 5],
             mouseset: [false; 2],
+            space: false,
             zoom: 0.0,
             mouse_pos: (0, 0),
             mouse_pos_last_pressed: (0, 0),
@@ -73,6 +76,8 @@ impl InputHandler {
 
             (ES::Pressed, _, Some(VirtualKeyCode::Down)) => self.keyset[4] = true,
             (ES::Released, _, Some(VirtualKeyCode::Down)) => self.keyset[4] = false,
+
+            (ES::Pressed, _, Some(VirtualKeyCode::Space)) => self.space = !self.space,
 
             (_, _, _) => (),
         };
@@ -131,6 +136,10 @@ impl InputHandler {
 
         if self.keyset[4] {
             events.push(Event::Shift(0.0, self.key_sensitivity));
+        }
+
+        if self.space {
+            events.push(Event::Start);
         }
 
         if self.mouseset[0] {

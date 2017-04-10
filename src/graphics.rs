@@ -25,7 +25,7 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let display = glutin::WindowBuilder::new().build_glium().unwrap();
+        let display = glutin::WindowBuilder::new().with_title("agents").build_glium().unwrap();
         let circle_mesh = CircleMesh::new(&display);
         let line_mesh = LineMesh::new(&display);
         let program = make_program(&display);

@@ -15,12 +15,13 @@ pub struct Simulation {
     renderer: Renderer,
     network: Network<LogicComponent>,
     input: InputHandler,
+    freeze: bool,
 }
 
 impl Simulation {
     pub fn new() -> Simulation {
-        let mut network = Network::random(100, 0.02);
-        network.physics_tick_till_rest(0.05, 30.0, 1_000);
+        let mut network = Network::random(150, 0.011);
+        network.physics_tick_till_rest(0.05, 10.0, 2_000);
 
         let renderer = Renderer::new();
         let input = InputHandler::new();
@@ -30,6 +31,7 @@ impl Simulation {
             renderer: renderer,
             network: network,
             input: input,
+            freeze: true,
         }
     }
 
@@ -78,7 +80,7 @@ impl Simulation {
                 }
 
                 if a.meat > b.meat && b.plant > a.plant {
-                    let min = cmp::min(a.meat-b.meat, b.plant-a.plant);
+                    let min = (cmp::min(a.meat-b.meat, b.plant-a.plant) as f32 / 2.0) as u32;
 
                     a.meat -= min;
                     b.meat += min;
@@ -145,11 +147,14 @@ impl Simulation {
             self.network.draw(&mut self.renderer);
 
             self.network.physics_tick(0.05);
-            self.network.logic_tick(&set_logic);
 
-            if tick % 1 == 0 {
-                self.network.debug(&total);
-                self.network.debug(&max);
+            if !self.freeze {
+                self.network.logic_tick(&set_logic);
+
+                if tick % 10 == 0 {
+                    self.network.debug(&total);
+                    self.network.debug(&max);
+                }
             }
 
             self.network.set_appearance(&set_appearance);
@@ -166,6 +171,9 @@ impl Simulation {
 
     fn assign_events(&mut self, events: Vec<Event>) -> bool {
         for e in events.iter() {
+            if let &Event::Start = e {
+                self.freeze = !self.freeze;
+            }
             if let &Event::Quit = e {
                 return true;
             }
