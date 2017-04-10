@@ -140,6 +140,7 @@ impl InputHandler {
 
         if self.space {
             events.push(Event::Start);
+            self.space = false;
         }
 
         if self.mouseset[0] {
