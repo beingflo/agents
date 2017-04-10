@@ -188,6 +188,10 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
+    pub fn debug<F>(&self, debug: &F) where F: Fn(Vec<&RefCell<T>>) {
+        debug(self.agents.iter().map(|x| &x.logic).collect());
+    }
+
     pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);

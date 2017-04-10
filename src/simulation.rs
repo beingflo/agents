@@ -66,7 +66,7 @@ impl Simulation {
                 }
 
                 if b.meat > a.meat && a.plant > b.plant {
-                    let min = cmp::min(b.meat-a.meat, a.plant-b.plant);
+                    let min = (cmp::min(b.meat-a.meat, a.plant-b.plant) as f32 / 2.0) as u32;
 
                     b.meat -= min;
                     a.meat += min;
@@ -99,16 +99,58 @@ impl Simulation {
                 (0.0, 0.6, 0.1)
             };
 
+            if a.mark {
+                b.color = (0.0, 0.0, 1.0); 
+            }
+
             if !a.alive {
                 b.color = (0.0, 0.0, 0.0);
             }
         };
 
+        let total = |xs: Vec<&RefCell<LogicComponent>>| {
+            let mut sum = (0, 0);
+            for bref in xs.iter() {
+                let b = bref.borrow_mut();
+
+                if !b.alive {
+                    continue;
+                }
+
+                sum.0 += b.meat;
+                sum.1 += b.plant;
+            }
+            println!("total resources: meat: {}, plant: {}", sum.0, sum.1);
+        };
+
+        let max = |mut xs: Vec<&RefCell<LogicComponent>>| {
+            let mut max = (0, 0);
+            let mut index = 0;
+            for (i, bref) in xs.iter().enumerate() {
+                let b = bref.borrow_mut();
+
+                if b.meat + b.plant > max.0 + max.1 && b.alive {
+                    max.0 = b.meat;
+                    max.1 = b.plant;
+                    index = i;
+
+                }
+            }
+            xs[index].borrow_mut().mark = true;
+            println!("max resources: meat: {}, plant: {}", max.0, max.1);
+        };
+
+        let mut tick = 0;
         loop {
             self.network.draw(&mut self.renderer);
 
             self.network.physics_tick(0.05);
             self.network.logic_tick(&set_logic);
+
+            if tick % 1 == 0 {
+                self.network.debug(&total);
+                self.network.debug(&max);
+            }
 
             self.network.set_appearance(&set_appearance);
 
@@ -117,6 +159,8 @@ impl Simulation {
             if self.assign_events(events) {
                 return;
             }
+
+            tick += 1;
         }
     }
 
@@ -146,17 +190,18 @@ struct LogicComponent {
     meat: u32,
 
     alive: bool,
+    mark: bool,
 }
 
 impl AbstractComponent for LogicComponent {
     fn new(rng: &mut rand::ThreadRng) -> Self {
         let p = rng.gen::<f32>();
-        let ptype = if p > 0.5 {
+        let ptype = if p < 0.5 {
             ProductionType::Hunter
         } else {
             ProductionType::Gatherer
         };
 
-        LogicComponent { ptype: ptype, plant: 100, meat: 100, alive: true }
+        LogicComponent { ptype: ptype, plant: 100, meat: 100, alive: true, mark: false }
     }
 }
