@@ -17,31 +17,6 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
-    pub fn lattice(n: usize) -> Network<T> {
-        let mut network = Network::new();
-
-        let side = (n as f64).sqrt() as i32;
-
-        for i in 0..side {
-            for j in 0..side {
-                let p1 = get_rand(&mut network.rng, -0.2, 0.2);
-                let p2 = get_rand(&mut network.rng, -0.2, 0.2);
-                network.agents.push(Agent::new((i as f32 + p1, j as f32 + p2), 0.25, (0.0, 0.0, 0.0), T::new(&mut network.rng)));
-            }
-        }
-
-        for i in 0..side*side {
-            if i >= 1 && i % side != 0 {
-                network.add_relation(i as usize, (i-1) as usize);
-            }
-            if i >= side {
-                network.add_relation(i as usize, (i-side) as usize);
-            }
-        }
-
-        network
-    }
-
     pub fn random(n: usize, p: f32) -> Network<T> {
         let mut network = Network::new();
 
