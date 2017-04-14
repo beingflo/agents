@@ -21,6 +21,7 @@ pub struct InputHandler {
 pub enum Event {
     Quit,
     ToggleFreeze,
+    Rebuild,
     Shift(f32, f32),
     Zoom(f32),
 }
@@ -107,6 +108,10 @@ impl InputHandler {
         if self.keyset.contains(&VK::Space) {
             events.push(Event::ToggleFreeze);
             self.keyset.remove(&VK::Space);
+        }
+
+        if self.keyset.contains(&VK::R) {
+            events.push(Event::Rebuild);
         }
 
         if self.mouseset[0] {

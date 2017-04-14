@@ -142,10 +142,10 @@ impl Simulation {
             xs[index].borrow_mut().mark = true;
         };
 
-        let mut logic_ticker = Ticker::new(20);
+        let mut logic_ticker = Ticker::new(10);
         let mut physics_ticker = Ticker::new(2);
         let mut debug_ticker = Ticker::new(10);
-        let mut appearance_ticker = Ticker::new(100);
+        let mut appearance_ticker = Ticker::new(10);
 
         loop {
             self.network.draw(&mut self.renderer);
@@ -182,6 +182,10 @@ impl Simulation {
             }
             if let &Event::Quit = e {
                 return true;
+            }
+            if let &Event::Rebuild = e {
+                self.network = Network::random(100, 0.015);
+                self.network.physics_tick_till_rest(0.05, 10.0, 1_000);
             }
         }
 
