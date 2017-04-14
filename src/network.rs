@@ -6,6 +6,24 @@ use graphics::Renderer;
 
 const AGENT_R: f32 = 0.25;
 
+// Rest length of springs
+const REST_LENGTH: f32 = 1.0;
+
+// Damping factor
+const DAMPING: f32 = 0.2;
+
+// Stiffness of spring
+const STIFFNESS: f32 = 1.0;
+
+// Coulomb's constant
+const COULOMB: f32 = 2.0;
+
+// Distance lower bound for Coulomb
+const DIST_BOUND: f32 = 0.1;
+
+// Centering coefficient
+const CENTERING: f32 = 0.05;
+
 pub struct Network<T: AbstractComponent> {
     agents: Vec<Agent<T>>,
     rng: rand::ThreadRng,
@@ -78,27 +96,17 @@ impl<T: AbstractComponent> Network<T> {
     // adjacent vertices at a constant distance and coulomb 
     // force to keep non-adjacent vertices from clustering
     pub fn physics_tick(&mut self, dt: f32) {
-        // Rest length of springs
-        let rest = 1.0;
-
-        // Damping factor
-        let d = 0.2;
-
-        // Stiffness of spring
-        let k = 1.0;
-
-        // Coulomb's constant
-        let k_e = 2.0;
-
-        // Distance lower bound for Coulomb
-        let low = 0.1;
-
-        // Centering coefficient
-        let cent = 0.05;
+        let rest = REST_LENGTH;
+        let d = DAMPING;
+        let k = STIFFNESS;
+        let k_e = COULOMB;
+        let low = DIST_BOUND;
+        let cent = CENTERING;
 
         for i in 0..self.agents.len() {
             let posi = self.agents[i].physics.pos;
 
+            // TODO: Vec2 struct with all associated functions
             // Spring force
             let mut f_spring = (0.0, 0.0);
             for j in self.agents[i].relations.iter() {
