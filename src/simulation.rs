@@ -8,6 +8,8 @@ use input::Event;
 use rand;
 use rand::Rng;
 
+use ticker::Ticker;
+
 use std::cmp;
 use std::cell::RefCell;
 
@@ -20,7 +22,7 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Simulation {
-        let mut network = Network::random(40, 0.05);
+        let mut network = Network::random(100, 0.015);
         network.physics_tick_till_rest(0.05, 10.0, 1_000);
 
         let renderer = Renderer::new();
@@ -140,30 +142,36 @@ impl Simulation {
             xs[index].borrow_mut().mark = true;
         };
 
-        let mut tick = 0;
+        let mut logic_ticker = Ticker::new(20);
+        let mut physics_ticker = Ticker::new(2);
+        let mut debug_ticker = Ticker::new(10);
+        let mut appearance_ticker = Ticker::new(100);
+
         loop {
             self.network.draw(&mut self.renderer);
 
-            self.network.physics_tick(0.05);
-
-            if !self.freeze {
-                self.network.logic_tick(&set_logic);
-
-                if tick % 10 == 0 {
-                    self.network.debug(&total);
-                    self.network.debug(&max);
-                }
+            if physics_ticker.tick() {
+                self.network.physics_tick(0.05);
             }
 
-            self.network.set_appearance(&set_appearance);
+            if logic_ticker.tick() && !self.freeze {
+                self.network.logic_tick(&set_logic);
+            }
+
+            if debug_ticker.tick() && !self.freeze {
+                self.network.debug(&total);
+                self.network.debug(&max);
+            }
+
+            if appearance_ticker.tick() {
+                self.network.set_appearance(&set_appearance);
+            }
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();
             if self.assign_events(events) {
                 return;
             }
-
-            tick += 1;
         }
     }
 

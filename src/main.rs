@@ -6,6 +6,7 @@ mod graphics;
 mod network;
 mod simulation;
 mod input;
+mod ticker;
 
 use simulation::Simulation;
 
