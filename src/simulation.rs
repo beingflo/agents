@@ -216,6 +216,6 @@ impl AbstractComponent for LogicComponent {
             ProductionType::Gatherer
         };
 
-        LogicComponent { ptype: ptype, plant: 100, meat: 100, alive: true, mark: false }
+        LogicComponent { ptype: ptype, plant: 10, meat: 10, alive: true, mark: false }
     }
 }

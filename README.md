@@ -1,12 +1,26 @@
 # Agent-based simulator
 
-Work in progress.
+Under development!
+
+## Screenshots
+![full](screenshots/screenshot1.png)
+
 
 ### Building
-Install rust from [the Rust website](https://www.rust-lang.org/)
+Install Rust from [the Rust website](https://www.rust-lang.org/)
 
-To build and run, execute the following after cloning
+To build, clone the repository and execute 
 
+```
+    cargo build --release
+```
+
+### Running
+Execute 
 ```
     cargo run --release
 ```
+
+### Controls
+Click and drag to move the view.
+Use the mouse wheel to zoom in and out.
