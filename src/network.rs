@@ -4,6 +4,8 @@ use std::cell::RefCell;
 
 use graphics::Renderer;
 
+const AGENT_R: f32 = 0.25;
+
 pub struct Network<T: AbstractComponent> {
     agents: Vec<Agent<T>>,
     rng: rand::ThreadRng,
@@ -39,7 +41,7 @@ impl<T: AbstractComponent> Network<T> {
         self.agents.push(Agent::new((   get_rand(&mut self.rng, -10.0, 10.0),
                                         get_rand(&mut self.rng, -10.0, 10.0)
                                     ),
-                                    0.25,
+                                    AGENT_R,
                                     (0.0, 0.0, 0.0),
                                     T::new(&mut self.rng)
                                     )

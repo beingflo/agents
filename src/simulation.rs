@@ -13,6 +13,13 @@ use ticker::Ticker;
 use std::cmp;
 use std::cell::RefCell;
 
+const NUM_AGENTS: usize = 100;
+const DEGREE_P: f32 = 0.015;
+
+const TIME_STEP: f32 = 0.05;
+const VEL_THRESH: f32 = 20.0;
+const IT_THRESH: usize = 1_000;
+
 pub struct Simulation {
     renderer: Renderer,
     network: Network<LogicComponent>,
@@ -22,8 +29,8 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Simulation {
-        let mut network = Network::random(100, 0.015);
-        network.physics_tick_till_rest(0.05, 10.0, 1_000);
+        let mut network = Network::random(NUM_AGENTS, DEGREE_P);
+        network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
 
         let renderer = Renderer::new();
         let input = InputHandler::new();
@@ -184,8 +191,8 @@ impl Simulation {
                 return true;
             }
             if let &Event::Rebuild = e {
-                self.network = Network::random(100, 0.015);
-                self.network.physics_tick_till_rest(0.05, 10.0, 1_000);
+                self.network = Network::random(NUM_AGENTS, DEGREE_P);
+                self.network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
             }
         }
 
