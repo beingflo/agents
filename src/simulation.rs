@@ -20,8 +20,8 @@ pub struct Simulation {
 
 impl Simulation {
     pub fn new() -> Simulation {
-        let mut network = Network::random(150, 0.011);
-        network.physics_tick_till_rest(0.05, 10.0, 2_000);
+        let mut network = Network::random(40, 0.05);
+        network.physics_tick_till_rest(0.05, 10.0, 1_000);
 
         let renderer = Renderer::new();
         let input = InputHandler::new();
@@ -122,7 +122,6 @@ impl Simulation {
                 sum.0 += b.meat;
                 sum.1 += b.plant;
             }
-            println!("total resources: meat: {}, plant: {}", sum.0, sum.1);
         };
 
         let max = |mut xs: Vec<&RefCell<LogicComponent>>| {
@@ -139,7 +138,6 @@ impl Simulation {
                 }
             }
             xs[index].borrow_mut().mark = true;
-            println!("max resources: meat: {}, plant: {}", max.0, max.1);
         };
 
         let mut tick = 0;
@@ -171,7 +169,7 @@ impl Simulation {
 
     fn assign_events(&mut self, events: Vec<Event>) -> bool {
         for e in events.iter() {
-            if let &Event::Start = e {
+            if let &Event::ToggleFreeze = e {
                 self.freeze = !self.freeze;
             }
             if let &Event::Quit = e {
