@@ -4,7 +4,7 @@ use network::AbstractComponent;
 use network::PhysicsComponent;
 use input::InputHandler;
 
-use input::Event;
+use input::InputEvent;
 use rand;
 use rand::Rng;
 
@@ -182,15 +182,15 @@ impl Simulation {
         }
     }
 
-    fn assign_events(&mut self, events: Vec<Event>) -> bool {
+    fn assign_events(&mut self, events: Vec<InputEvent>) -> bool {
         for e in events.iter() {
-            if let &Event::ToggleFreeze = e {
+            if let &InputEvent::ToggleFreeze = e {
                 self.freeze = !self.freeze;
             }
-            if let &Event::Quit = e {
+            if let &InputEvent::Quit = e {
                 return true;
             }
-            if let &Event::Rebuild = e {
+            if let &InputEvent::Rebuild = e {
                 self.network = Network::random(NUM_AGENTS, DEGREE_P);
                 self.network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
             }

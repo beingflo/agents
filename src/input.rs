@@ -18,7 +18,7 @@ pub struct InputHandler {
 }
 
 #[derive(Debug)]
-pub enum Event {
+pub enum InputEvent {
     Quit,
     ToggleFreeze,
     Rebuild,
@@ -98,20 +98,20 @@ impl InputHandler {
         }
     }
 
-    pub fn get_events(&mut self) -> Vec<Event> {
+    pub fn get_events(&mut self) -> Vec<InputEvent> {
         let mut events = Vec::new();
 
         if self.keyset.contains(&VK::Q) || self.keyset.contains(&VK::Escape) {
-            events.push(Event::Quit);
+            events.push(InputEvent::Quit);
         }
 
         if self.keyset.contains(&VK::Space) {
-            events.push(Event::ToggleFreeze);
+            events.push(InputEvent::ToggleFreeze);
             self.keyset.remove(&VK::Space);
         }
 
         if self.keyset.contains(&VK::R) {
-            events.push(Event::Rebuild);
+            events.push(InputEvent::Rebuild);
         }
 
         if self.mouseset[0] {
@@ -119,12 +119,12 @@ impl InputHandler {
                         self.mouse_pos.1 - self.mouse_pos_last_pressed.1);
             let shift_x = drag.0 as f32 * self.mouse_move_sensitivity;
             let shift_y = drag.1 as f32 * self.mouse_move_sensitivity;
-            events.push(Event::Shift(shift_x, -shift_y));
+            events.push(InputEvent::Shift(shift_x, -shift_y));
             self.mouse_pos_last_pressed = self.mouse_pos;
         }
 
         if self.zoom != 0.0 {
-            events.push(Event::Zoom(self.zoom * self.mouse_scroll_sensitivity));
+            events.push(InputEvent::Zoom(self.zoom * self.mouse_scroll_sensitivity));
             self.zoom = 0.0;
         }
 

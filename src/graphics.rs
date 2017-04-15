@@ -5,7 +5,7 @@ use std::io::prelude::*;
 use glium::{self, DisplayBuild, glutin, Surface};
 use glium::backend::glutin_backend::GlutinFacade;
 
-use input::Event;
+use input::InputEvent;
 
 
 pub struct Renderer {
@@ -107,16 +107,16 @@ impl Renderer {
         self.frame.take().unwrap().finish().unwrap();
     }
 
-    pub fn apply_events(&mut self, events: &[Event]) {
+    pub fn apply_events(&mut self, events: &[InputEvent]) {
         assert!(self.frame.is_none());
         for e in events {
             match *e {
-                Event::Shift(x, y) => {
+                InputEvent::Shift(x, y) => {
                     // Division by zoom necessary for same sensitivity on every zoom level
                     self.view_center.0 += x / self.zoom;
                     self.view_center.1 += y / self.zoom;
                 }
-                Event::Zoom(f) => {
+                InputEvent::Zoom(f) => {
                     self.zoom += self.zoom * f;
                     if self.zoom < 0.0001 {
                         self.zoom = 0.0001;
