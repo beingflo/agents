@@ -113,7 +113,7 @@ impl<T: AbstractComponent> Network<T> {
                 let dir = posj - posi;
                 let dist = dir.length();
 
-                f_spring += dir.normalized().scale(k * dist - rest);
+                f_spring += dir.normalized().scale(k * (dist - rest));
             }
 
             // Coulomb force

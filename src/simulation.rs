@@ -8,7 +8,7 @@ use input::InputEvent;
 use rand;
 use rand::Rng;
 
-use ticker::Ticker;
+use util::Ticker;
 
 use std::cmp;
 use std::cell::RefCell;
