@@ -2,7 +2,7 @@ use glium::glutin;
 use glium::backend::glutin_backend::PollEventsIter;
 use glium::glutin::VirtualKeyCode as VK;
 
-use std::collections::hash_set::HashSet;
+use std::collections::HashSet;
 
 pub struct InputHandler {
     keyset: HashSet<VK>,

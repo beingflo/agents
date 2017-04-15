@@ -47,8 +47,14 @@ impl Simulation {
     }
 
     pub fn run(&mut self) {
+        let mut physics_ticker = Ticker::new(2);
+
         loop {
             self.network.draw(&mut self.renderer);
+
+            if physics_ticker.tick() {
+                self.network.physics_tick(TIME_STEP);
+            }
 
             self.input.handle_events(self.renderer.display.poll_events());
             let events = self.input.get_events();

@@ -12,7 +12,7 @@ const AGENT_R: f32 = 0.25;
 const REST_LENGTH: f32 = 1.0;
 
 // Damping factor
-const DAMPING: f32 = 0.2;
+const DAMPING: f32 = 0.7;
 
 // Stiffness of spring
 const STIFFNESS: f32 = 1.0;
@@ -58,7 +58,7 @@ impl<T: AbstractComponent> Network<T> {
     }
 
     pub fn add_agent(&mut self) {
-        self.agents.push(Agent::new(Vec2::new(get_rand(&mut self.rng, -10.0, 10.0), get_rand(&mut self.rng, -10.0, 10.0)),
+        self.agents.push(Agent::new(Vec2::new(get_rand(&mut self.rng, -20.0, 20.0), get_rand(&mut self.rng, -20.0, 20.0)),
                                     AGENT_R,
                                     (0.0, 0.0, 0.0),
                                     T::new(&mut self.rng)
