@@ -40,7 +40,7 @@ impl Renderer {
             perspective_zoom: None,
             perspective_shift: None,
             frame: None,
-            zoom: 0.1,
+            zoom: 0.05,
             view_center: Vec2::new(0.0, 0.0),
         }
     }
