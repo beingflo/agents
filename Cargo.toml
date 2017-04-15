@@ -6,3 +6,4 @@ authors = ["Florian Marending <floriama@student.ethz.ch>"]
 [dependencies]
 glium = "*"
 rand = "*"
+clap = "*"

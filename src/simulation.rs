@@ -13,14 +13,14 @@ use util::Ticker;
 use std::cmp;
 use std::cell::RefCell;
 
-const NUM_AGENTS: usize = 100;
-const DEGREE_P: f32 = 0.015;
-
 const TIME_STEP: f32 = 0.05;
 const VEL_THRESH: f32 = 20.0;
 const IT_THRESH: usize = 1_000;
 
 pub struct Simulation {
+    n: usize,
+    p: f32,
+
     renderer: Renderer,
     network: Network<LogicComponent>,
     input: InputHandler,
@@ -28,8 +28,8 @@ pub struct Simulation {
 }
 
 impl Simulation {
-    pub fn new() -> Simulation {
-        let mut network = Network::random(NUM_AGENTS, DEGREE_P);
+    pub fn new(n: usize, d: f32) -> Simulation {
+        let mut network = Network::random(n, d);
         network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
 
         let renderer = Renderer::new();
@@ -37,6 +37,8 @@ impl Simulation {
 
 
         Simulation {
+            n: n,
+            p: d,
             renderer: renderer,
             network: network,
             input: input,
@@ -191,7 +193,7 @@ impl Simulation {
                 return true;
             }
             if let &InputEvent::Rebuild = e {
-                self.network = Network::random(NUM_AGENTS, DEGREE_P);
+                self.network = Network::random(self.n, self.p);
                 self.network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
             }
         }
