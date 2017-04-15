@@ -2,6 +2,8 @@ use std::fs::File;
 use std::path::Path;
 use std::io::prelude::*;
 
+use util::Vec2;
+
 use glium::{self, DisplayBuild, glutin, Surface};
 use glium::backend::glutin_backend::GlutinFacade;
 
@@ -20,7 +22,7 @@ pub struct Renderer {
     frame: Option<glium::Frame>,
 
     zoom: f32,
-    view_center: (f32, f32),
+    view_center: Vec2,
 }
 
 impl Renderer {
@@ -39,7 +41,7 @@ impl Renderer {
             perspective_shift: None,
             frame: None,
             zoom: 0.1,
-            view_center: (0.0, 0.0),
+            view_center: Vec2::new(0.0, 0.0),
         }
     }
 
@@ -61,7 +63,7 @@ impl Renderer {
         self.frame.as_mut().unwrap().clear_color(r, g, b, 0.0);
     }
 
-    pub fn draw_circle(&mut self, pos: (f32, f32), r: f32, color: (f32, f32, f32)) {
+    pub fn draw_circle(&mut self, pos: Vec2, r: f32, color: (f32, f32, f32)) {
         assert!(self.frame.is_some());
 
         let model = get_model_circle(pos, r);
@@ -81,7 +83,7 @@ impl Renderer {
             .unwrap();
     }
 
-    pub fn draw_line(&mut self, p1: (f32, f32), p2: (f32, f32), color: (f32, f32, f32)) {
+    pub fn draw_line(&mut self, p1: Vec2, p2: Vec2, color: (f32, f32, f32)) {
         assert!(self.frame.is_some());
 
         let model = get_model_line(p1, p2);
@@ -113,8 +115,7 @@ impl Renderer {
             match *e {
                 InputEvent::Shift(x, y) => {
                     // Division by zoom necessary for same sensitivity on every zoom level
-                    self.view_center.0 += x / self.zoom;
-                    self.view_center.1 += y / self.zoom;
+                    self.view_center += Vec2::new(x, y).scale(1.0 / self.zoom);
                 }
                 InputEvent::Zoom(f) => {
                     self.zoom += self.zoom * f;
@@ -212,7 +213,7 @@ fn get_perspective_zoom(frame: &glium::Frame, zoom: f32) -> [[f32; 4]; 4] {
 
 fn get_perspective_shift(frame: &glium::Frame,
                          zoom: f32,
-                         view_center: (f32, f32))
+                         view_center: Vec2)
                          -> [[f32; 4]; 4] {
     let perspective = {
         let (width, height) = frame.get_dimensions();
@@ -222,36 +223,35 @@ fn get_perspective_shift(frame: &glium::Frame,
             [1.0, 0.0, 0.0, 0.0],
             [0.0, 1.0, 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
-            [view_center.0 * zoom * ar, view_center.1 * zoom, 0.0, 1.0]
+            [view_center.x() * zoom * ar, view_center.y() * zoom, 0.0, 1.0]
         ]
     };
 
     perspective
 }
 
-fn get_model_circle(pos: (f32, f32), r: f32) -> [[f32; 4]; 4] {
+fn get_model_circle(pos: Vec2, r: f32) -> [[f32; 4]; 4] {
     let model = {
         [
             [r, 0.0, 0.0, 0.0],
             [0.0, r, 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [pos.0, pos.1, 0.0, 1.0]
+            [pos.x(), pos.y(), 0.0, 1.0]
         ]
     };
 
     model
 }
 
-fn get_model_line(p1: (f32, f32), p2: (f32, f32)) -> [[f32; 4]; 4] {
+fn get_model_line(p1: Vec2, p2: Vec2) -> [[f32; 4]; 4] {
     let model = {
-        let dx = p2.0 - p1.0;
-        let dy = p2.1 - p1.1;
+        let d = p2 - p1;
 
         [
             [0.0, 0.0, 0.0, 0.0],
-            [dx, dy, 0.0, 0.0],
+            [d.x(), d.y(), 0.0, 0.0],
             [0.0, 0.0, 0.0, 0.0],
-            [p1.0, p1.1, 0.0, 1.0]
+            [p1.x(), p1.y(), 0.0, 1.0]
         ]
     };
 

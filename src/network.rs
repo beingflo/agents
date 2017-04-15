@@ -1,8 +1,10 @@
-use rand;
-use rand::Rng;
 use std::cell::RefCell;
 
+use rand;
+use rand::Rng;
+
 use graphics::Renderer;
+use util::Vec2;
 
 const AGENT_R: f32 = 0.25;
 
@@ -56,9 +58,7 @@ impl<T: AbstractComponent> Network<T> {
     }
 
     pub fn add_agent(&mut self) {
-        self.agents.push(Agent::new((   get_rand(&mut self.rng, -10.0, 10.0),
-                                        get_rand(&mut self.rng, -10.0, 10.0)
-                                    ),
+        self.agents.push(Agent::new(Vec2::new(get_rand(&mut self.rng, -10.0, 10.0), get_rand(&mut self.rng, -10.0, 10.0)),
                                     AGENT_R,
                                     (0.0, 0.0, 0.0),
                                     T::new(&mut self.rng)
@@ -86,8 +86,7 @@ impl<T: AbstractComponent> Network<T> {
     fn total_vel(&self) -> f32 {
         let mut total_vel = 0.0;
         for i in self.agents.iter() {
-            total_vel += i.physics.vel.0.abs();
-            total_vel += i.physics.vel.1.abs();
+            total_vel += i.physics.vel.abs().horizontal_sum();
         }
         total_vel
     }
@@ -106,29 +105,27 @@ impl<T: AbstractComponent> Network<T> {
         for i in 0..self.agents.len() {
             let posi = self.agents[i].physics.pos;
 
-            // TODO: Vec2 struct with all associated functions
             // Spring force
-            let mut f_spring = (0.0, 0.0);
+            let mut f_spring = Vec2::new(0.0, 0.0);
             for j in self.agents[i].relations.iter() {
                 let posj = self.agents[j.target].physics.pos;
 
-                let dist = ((posj.0 - posi.0).powi(2) + (posj.1 - posi.1).powi(2)).sqrt();
-                let dir = (posj.0 - posi.0, posj.1 - posi.1);
+                let dir = posj - posi;
+                let dist = dir.length();
 
-                f_spring.0 += k*(dist - rest) * (dir.0 / dist);
-                f_spring.1 += k*(dist - rest) * (dir.1 / dist);
+                f_spring += dir.normalized().scale(k * dist - rest);
             }
 
             // Coulomb force
-            let mut f_coulomb = (0.0, 0.0);
+            let mut f_coulomb = Vec2::new(0.0, 0.0);
             for j in 0..self.agents.len() {
                 if i == j {
                     continue;
                 }
                 let posj = self.agents[j].physics.pos;
 
-                let dist = ((posj.0 - posi.0).powi(2) + (posj.1 - posi.1).powi(2)).sqrt();
-                let dir = (posj.0 - posi.0, posj.1 - posi.1);
+                let dir = posj - posi;
+                let dist = dir.length();
 
                 let dist_bound = if dist < low {
                     low
@@ -136,26 +133,21 @@ impl<T: AbstractComponent> Network<T> {
                     dist
                 };
 
-                f_coulomb.0 += -k_e/(dist_bound*dist_bound) * (dir.0 / dist_bound);
-                f_coulomb.1 += -k_e/(dist_bound*dist_bound) * (dir.1 / dist_bound);
+                f_coulomb += dir.normalized().scale(-k_e / (dist_bound * dist_bound));
             }
 
-            let mut f = (f_spring.0 + f_coulomb.0, f_spring.1 + f_coulomb.1);
+            let mut f = f_spring + f_coulomb;
 
             // Damping
-            f.0 -= d*self.agents[i].physics.vel.0;
-            f.1 -= d*self.agents[i].physics.vel.1;
+            f -= self.agents[i].physics.vel.scale(d);
 
             // Centering force
             // -> to keep the vertices from floating away
-            f.0 += -cent*posi.0;
-            f.1 += -cent*posi.1;
+            f += posi.scale(-cent);
 
-            self.agents[i].physics.vel.0 += dt*f.0;
-            self.agents[i].physics.vel.1 += dt*f.1;
+            self.agents[i].physics.vel += f.scale(dt);
 
-            self.agents[i].physics.pos.0 += dt*self.agents[i].physics.vel.0;
-            self.agents[i].physics.pos.1 += dt*self.agents[i].physics.vel.1;
+            self.agents[i].physics.pos += self.agents[i].physics.vel.scale(dt);
         }
     }
 
@@ -222,14 +214,14 @@ impl Relation {
 
 #[derive(Copy, Clone)]
 pub struct PhysicsComponent {
-    pos: (f32, f32),
-    vel: (f32, f32),
+    pos: Vec2,
+    vel: Vec2,
     pub r: f32,
     pub color: (f32, f32, f32),
 }
 
 impl PhysicsComponent {
-    fn new(pos: (f32, f32), vel: (f32, f32), r: f32, color: (f32, f32, f32)) -> PhysicsComponent {
+    fn new(pos: Vec2, vel: Vec2, r: f32, color: (f32, f32, f32)) -> PhysicsComponent {
         PhysicsComponent {
             pos: pos,
             vel: vel,
@@ -241,8 +233,8 @@ impl PhysicsComponent {
 }
 
 impl<T: AbstractComponent> Agent<T> {
-    fn new(pos: (f32, f32), r: f32, color: (f32, f32, f32), ac: T) -> Agent<T> {
-        let pc = PhysicsComponent::new(pos, (0.0, 0.0), r, color);
+    fn new(pos: Vec2, r: f32, color: (f32, f32, f32), ac: T) -> Agent<T> {
+        let pc = PhysicsComponent::new(pos, Vec2::new(0.0, 0.0), r, color);
 
         Agent {
             physics: pc,
