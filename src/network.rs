@@ -72,23 +72,23 @@ impl<T: AbstractComponent> Network<T> {
     }
 
     pub fn physics_tick_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
-        let mut total_vel = 2.0*thresh;
+        let mut avg_vel = 2.0*thresh;
 
         let mut step = 0;
-        while total_vel > thresh && step < max {
+        while avg_vel > thresh && step < max {
             self.physics_tick(dt);
-            total_vel = self.total_vel();
+            avg_vel = self.average_vel();
             step += 1;
         }
 
     }
 
-    fn total_vel(&self) -> f32 {
+    fn average_vel(&self) -> f32 {
         let mut total_vel = 0.0;
         for i in self.agents.iter() {
             total_vel += i.physics.vel.abs().horizontal_sum();
         }
-        total_vel
+        total_vel / self.agents.len() as f32
     }
 
     // Force driven smoothing using spring forces to keep 

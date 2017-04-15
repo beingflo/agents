@@ -14,8 +14,8 @@ use std::cmp;
 use std::cell::RefCell;
 
 const TIME_STEP: f32 = 0.05;
-const VEL_THRESH: f32 = 20.0;
-const IT_THRESH: usize = 1_000;
+const VEL_THRESH: f32 = 0.001;
+const IT_THRESH: usize = 2_000;
 
 pub struct Simulation {
     n: usize,

@@ -13,7 +13,7 @@ use simulation::Simulation;
 use clap::{Arg, App};
 
 const NUM_AGENTS: usize = 100;
-const DEGREE_P: f32 = 0.01;
+const DEGREE_P: f32 = 0.02;
 
 fn main() {
     let (n, p) = get_args();
