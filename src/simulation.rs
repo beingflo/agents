@@ -1,7 +1,6 @@
 use graphics::Renderer;
 use network::Network;
 use network::AbstractComponent;
-use network::PhysicsComponent;
 use input::InputHandler;
 
 use input::InputEvent;
@@ -9,9 +8,6 @@ use rand;
 use rand::Rng;
 
 use util::Ticker;
-
-use std::cmp;
-use std::cell::RefCell;
 
 const TIME_STEP: f32 = 0.05;
 const VEL_THRESH: f32 = 0.001;

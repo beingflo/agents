@@ -6,6 +6,7 @@ extern crate clap;
 mod graphics;
 mod network;
 mod simulation;
+mod graph;
 mod input;
 mod util;
 

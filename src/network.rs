@@ -151,24 +151,6 @@ impl<T: AbstractComponent> Network<T> {
         }
     }
 
-    pub fn logic_tick<F>(&mut self, set_logic: &F) where F: Fn(&RefCell<T>, Vec<&RefCell<T>>) {
-        // TODO shuffle order
-
-        for a in self.agents.iter() {
-            set_logic(&a.logic, a.relations.iter().map(|r| &(self.agents[r.target].logic)).collect::<Vec<&RefCell<T>>>());
-        }
-    }
-
-    pub fn set_appearance<F>(&mut self, set_appearance: &F) where F: Fn(&T, &mut PhysicsComponent) {
-        for a in self.agents.iter_mut() {
-            set_appearance(&a.logic.borrow(), &mut a.physics);
-        }
-    }
-
-    pub fn debug<F>(&self, debug: &F) where F: Fn(Vec<&RefCell<T>>) {
-        debug(self.agents.iter().map(|x| &x.logic).collect());
-    }
-
     pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
