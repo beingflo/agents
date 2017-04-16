@@ -32,7 +32,6 @@ impl<T> Node<T> {
 
 #[derive(Debug)]
 pub struct Edge<S> {
-    free: bool,
     target: NodeIndex,
     next: Option<EdgeIndex>,
 
@@ -41,7 +40,7 @@ pub struct Edge<S> {
 
 impl<S> Edge<S> {
     fn new(target: NodeIndex, next: Option<EdgeIndex>, payload: S) -> Edge<S> {
-        Edge { free: false, target: target, next: next, payload: payload }
+        Edge { target: target, next: next, payload: payload }
     }
 }
 
@@ -55,12 +54,6 @@ impl<T, S> Graph<T, S> {
         max(self.nodes.len() - self.nodes_free.len(), 0)
     }
 
-    // num_edges should not be relied on!
-    // Incoming edges of deleted nodes are not explicity
-    // removed, thus this function may return a number greater
-    // than the actual active edges.
-    // An accurate number may only be returned right after 
-    // a call to 'remove_free'
     pub fn num_edges(&self) -> usize {
         max(self.edges.len() - self.edges_free.len(), 0)
     }
@@ -81,22 +74,65 @@ impl<T, S> Graph<T, S> {
         }
     }
 
-    // Incoming edges are not deleted, they must be invalidated
-    // eventually at a later time
     pub fn remove_node(&mut self, node_idx: NodeIndex) {
         self.nodes_free.insert(node_idx);
-        let node = &mut self.nodes[node_idx.0];
-        node.free = true;
+        self.nodes[node_idx.0].free = true;
 
-        let mut edge_idx = node.first;
+        let mut edge_idx = self.nodes[node_idx.0].first;
 
+        // Remove outgoing edges
         while let Some(e_idx) = edge_idx {
             let e = &mut self.edges[e_idx.0];
 
-            e.free = true;
             self.edges_free.insert(e_idx);
 
             edge_idx = e.next;
+        }
+
+        // Remove incoming edges
+        for n in self.nodes.iter_mut() {
+            let mut edge_idx = n.first;
+            let mut prev_idx = edge_idx;
+
+            if edge_idx.is_none() {
+                continue;
+            }
+
+            let mut found = false;
+            while let Some(e_idx) = edge_idx {
+                let edge = &mut self.edges[e_idx.0];
+
+                if edge.target == node_idx {
+                    found = true;
+                    break;
+                }
+
+                prev_idx = edge_idx;
+                edge_idx = edge.next;
+            }
+
+            if !found {
+                continue;
+            }
+
+            let e_next;
+            {
+                let e_idx = edge_idx.unwrap();
+                let e = &mut self.edges[e_idx.0];
+
+                e_next = e.next;
+
+                // Bookkeeping
+                self.edges_free.insert(e_idx);
+            }
+
+            // Resolve first and next references
+            if prev_idx == edge_idx {
+                n.first = e_next;
+            } else {
+                // Unwrap won't panic since there was a successor
+                self.edges[prev_idx.unwrap().0].next = e_next;
+            }
         }
     }
 
@@ -153,7 +189,6 @@ impl<T, S> Graph<T, S> {
 
             // Bookkeeping
             self.edges_free.insert(e_idx);
-            e.free = true;
         }
 
         // Resolve first and next references
@@ -177,7 +212,7 @@ impl<T, S> Graph<T, S> {
 
         while let Some(edge_idx) = edge {
             let e = &self.edges[edge_idx.0];
-            if e.target == target && !e.free {
+            if e.target == target {
                 return true;
             }
 
@@ -185,10 +220,6 @@ impl<T, S> Graph<T, S> {
         }
 
         false
-    }
-
-    fn remove_free(&mut self) {
-        unimplemented!();
     }
 
     fn node_payload(&mut self, node: NodeIndex) -> &mut T {
@@ -206,7 +237,7 @@ impl<T, S> Graph<T, S> {
         let mut edge = source_node.first;
 
         while let Some(edge_idx) = edge {
-            if self.edges[edge_idx.0].target == target && !self.edges[edge_idx.0].free {
+            if self.edges[edge_idx.0].target == target {
                 return Some(&mut self.edges[edge_idx.0].payload);
             }
             edge = self.edges[edge_idx.0].next;
@@ -329,7 +360,7 @@ mod tests {
 
         g.remove_node(vec[5]);
 
-        assert_eq!(g.num_edges(), 90);
+        assert_eq!(g.num_edges(), 81);
         assert_eq!(g.contains_edge(vec[5], vec[8]), false);
 
         // Incoming edges are not explicitly removed, but 
