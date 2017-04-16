@@ -331,8 +331,25 @@ mod tests {
 
         assert_eq!(g.num_edges(), 90);
         assert_eq!(g.contains_edge(vec[5], vec[8]), false);
+
         // Incoming edges are not explicitly removed, but 
         // contains_edge reports correctly
         assert_eq!(g.contains_edge(vec[8], vec[5]), false);
+    }
+
+    #[test]
+    fn re_add_node() {
+        let mut g = Graph::<(), ()>::new();
+
+        let a = g.add_node(());
+        let b = g.add_node(());
+
+        g.add_edge(a, b, ());
+
+        g.remove_node(b);
+
+        let c = g.add_node(());
+
+        assert_eq!(g.contains_edge(a, c), false);
     }
 }
