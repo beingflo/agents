@@ -1,5 +1,7 @@
 use std::collections::HashSet;
+use std::cmp::max;
 
+#[derive(Debug)]
 pub struct Graph<T, S> {
     nodes: Vec<Node<T>>,
     edges: Vec<Edge<S>>,
@@ -8,12 +10,13 @@ pub struct Graph<T, S> {
     edges_free: HashSet<EdgeIndex>,
 }
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct NodeIndex(usize);
 
-#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub struct EdgeIndex(usize);
 
+#[derive(Debug)]
 pub struct Node<T> {
     free: bool,
     first: Option<EdgeIndex>,
@@ -27,6 +30,7 @@ impl<T> Node<T> {
     }
 }
 
+#[derive(Debug)]
 pub struct Edge<S> {
     free: bool,
     target: NodeIndex,
@@ -47,6 +51,14 @@ impl<T, S> Graph<T, S> {
                 nodes_free: HashSet::new(), edges_free: HashSet::new() }
     }
 
+    pub fn num_nodes(&self) -> usize {
+        max(self.nodes.len() - self.nodes_free.len(), 0)
+    }
+
+    pub fn num_edges(&self) -> usize {
+        max(self.edges.len() - self.edges_free.len(), 0)
+    }
+
     pub fn add_node(&mut self, payload: T) -> NodeIndex {
         if self.nodes_free.is_empty() {
             let index = self.nodes.len();
@@ -63,6 +75,8 @@ impl<T, S> Graph<T, S> {
         }
     }
 
+    // Incoming edges are not deleted, they must be invalidated
+    // eventually at a later time
     pub fn remove_node(&mut self, node_idx: NodeIndex) {
         self.nodes_free.insert(node_idx);
         let node = &mut self.nodes[node_idx.0];
@@ -81,6 +95,10 @@ impl<T, S> Graph<T, S> {
     }
 
     pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, payload: S) {
+        if self.nodes[source.0].free || self.nodes[source.0].free {
+            return;
+        }
+
         if self.edges_free.is_empty() {
             let index = self.edges.len();
             let node = &mut self.nodes[source.0];
@@ -94,6 +112,7 @@ impl<T, S> Graph<T, S> {
 
             let node = &mut self.nodes[source.0];
             self.edges[edge_idx.0] = Edge::new(target, node.first, payload);
+            node.first = Some(edge_idx);
         }
     }
 
@@ -166,5 +185,93 @@ impl<T, S> Graph<T, S> {
 
 #[cfg(test)]
 mod tests {
+    use graph::Graph;
+
+    #[test]
+    fn construction() {
+        let mut g = Graph::<(),()>::new();
+
+        for _ in 0..10 {
+            let a = g.add_node(());
+            let b = g.add_node(());
+
+            g.add_edge(a, b, ());
+        }
+
+        assert_eq!(g.num_nodes(), 20);
+        assert_eq!(g.num_edges(), 10);
+    }
+
+    #[test]
+    fn remove_node() {
+        let mut g = Graph::<(),()>::new();
+
+        let mut a = g.add_node(());
+        for _ in 0..10 {
+            a = g.add_node(());
+            let b = g.add_node(());
+
+            g.add_edge(a, b, ());
+        }
+
+        g.remove_node(a);
+
+        assert_eq!(g.num_nodes(), 20);
+        assert_eq!(g.num_edges(), 9);
+    }
+
+    #[test]
+    fn remove_edge() {
+        let mut g = Graph::<(),()>::new();
+
+        let mut a = g.add_node(());
+        let mut b = g.add_node(());
+        for _ in 0..10 {
+            a = g.add_node(());
+            b = g.add_node(());
+
+            g.add_edge(a, b, ());
+        }
+
+        g.remove_edge(a, b);
+
+        assert_eq!(g.num_nodes(), 22);
+        assert_eq!(g.num_edges(), 9);
+    }
+
+    #[test]
+    fn remove_both() {
+        let mut g = Graph::<(),()>::new();
+
+        let mut a = g.add_node(());
+        let mut b = g.add_node(());
+        for _ in 0..10 {
+            a = g.add_node(());
+            b = g.add_node(());
+
+            g.add_edge(a, b, ());
+        }
+
+        assert_eq!(g.num_edges(), 10);
+
+        g.remove_edge(a, b);
+
+        assert_eq!(g.num_edges(), 9);
+
+        let a = g.add_node(());
+        let b = g.add_node(());
+        let c = g.add_node(());
+
+        g.add_edge(a, b, ());
+        g.add_edge(a, c, ());
+        g.add_edge(b, c, ());
+
+        assert_eq!(g.num_edges(), 12);
+
+        g.remove_node(a);
+
+        assert_eq!(g.num_nodes(), 24);
+        assert_eq!(g.num_edges(), 10);
+    }
 
 }
