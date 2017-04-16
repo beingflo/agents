@@ -55,6 +55,12 @@ impl<T, S> Graph<T, S> {
         max(self.nodes.len() - self.nodes_free.len(), 0)
     }
 
+    // num_edges should not be relied on!
+    // Incoming edges of deleted nodes are not explicity
+    // removed, thus this function may return a number greater
+    // than the actual active edges.
+    // An accurate number may only be returned right after 
+    // a call to 'remove_free'
     pub fn num_edges(&self) -> usize {
         max(self.edges.len() - self.edges_free.len(), 0)
     }
@@ -160,15 +166,14 @@ impl<T, S> Graph<T, S> {
     }
 
     fn contains_edge(&self, source: NodeIndex, target: NodeIndex) -> bool {
-        let node_source = &self.nodes[source.0];
-        let node_target = &self.nodes[target.0];
+        let source_node = &self.nodes[source.0];
+        let target_node = &self.nodes[target.0];
 
-        // TODO remove stale edge
-        if node_source.free || node_target.free {
+        if source_node.free || target_node.free {
             return false;
         }
 
-        let mut edge = node_source.first;
+        let mut edge = source_node.first;
 
         while let Some(edge_idx) = edge {
             let e = &self.edges[edge_idx.0];
@@ -180,6 +185,34 @@ impl<T, S> Graph<T, S> {
         }
 
         false
+    }
+
+    fn remove_free(&mut self) {
+        unimplemented!();
+    }
+
+    fn node_payload(&mut self, node: NodeIndex) -> &mut T {
+        &mut self.nodes[node.0].payload
+    }
+
+    fn edge_payload(&mut self, source: NodeIndex, target: NodeIndex) -> Option<&mut S> {
+        let source_node = &self.nodes[source.0];
+        let target_node = &self.nodes[target.0];
+
+        if source_node.free || target_node.free {
+            return None;
+        }
+
+        let mut edge = source_node.first;
+
+        while let Some(edge_idx) = edge {
+            if self.edges[edge_idx.0].target == target && !self.edges[edge_idx.0].free {
+                return Some(&mut self.edges[edge_idx.0].payload);
+            }
+            edge = self.edges[edge_idx.0].next;
+        }
+
+        None
     }
 }
 
