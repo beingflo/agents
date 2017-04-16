@@ -6,6 +6,8 @@ use rand::Rng;
 use graphics::Renderer;
 use util::Vec2;
 
+use graph::{ Graph, Node, Edge, NodeIndex };
+
 const AGENT_R: f32 = 0.25;
 
 // Rest length of springs
@@ -27,14 +29,14 @@ const DIST_BOUND: f32 = 0.1;
 const CENTERING: f32 = 0.05;
 
 pub struct Network<T: AbstractComponent> {
-    agents: Vec<Agent<T>>,
+    graph: Graph<Agent<T>, Relation>,
     rng: rand::ThreadRng,
 }
 
 impl<T: AbstractComponent> Network<T> {
     pub fn new() -> Network<T> {
         Network {
-            agents: Vec::new(),
+            graph: Graph::new(),
             rng: rand::thread_rng(),
         }
     }
@@ -42,14 +44,15 @@ impl<T: AbstractComponent> Network<T> {
     pub fn random(n: usize, p: f32) -> Network<T> {
         let mut network = Network::new();
 
+        let mut nodes = Vec::new();
         for _ in 0..n {
-            network.add_agent();
+            nodes.push(network.add_agent());
         }
 
         for i in 0..n {
             for j in i+1..n {
                 if get_rand(&mut network.rng, 0.0, 1.0) < p {
-                    network.add_relation(i, j);
+                    network.add_relation(nodes[i], nodes[j]);
                 }
             }
         }
@@ -57,18 +60,17 @@ impl<T: AbstractComponent> Network<T> {
         network
     }
 
-    pub fn add_agent(&mut self) {
-        self.agents.push(Agent::new(Vec2::new(get_rand(&mut self.rng, -20.0, 20.0), get_rand(&mut self.rng, -20.0, 20.0)),
+    pub fn add_agent(&mut self) -> NodeIndex{
+        self.graph.add_node(Agent::new(Vec2::new(get_rand(&mut self.rng, -20.0, 20.0), get_rand(&mut self.rng, -20.0, 20.0)),
                                     AGENT_R,
                                     (0.0, 0.0, 0.0),
                                     T::new(&mut self.rng)
                                     )
-                         );
+                         )
     }
 
-    pub fn add_relation(&mut self, src: usize, dest: usize) {
-        self.agents[src].relations.push(Relation::new(dest, (0.0, 0.0, 0.0)));
-        self.agents[dest].relations.push(Relation::new(src, (0.0, 0.0, 0.0)));
+    pub fn add_relation(&mut self, src: NodeIndex, dest: NodeIndex) {
+        self.graph.add_edge(src, dest, Relation::new((0.0, 0.0, 0.0)));
     }
 
     pub fn physics_tick_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
@@ -85,10 +87,11 @@ impl<T: AbstractComponent> Network<T> {
 
     fn average_vel(&self) -> f32 {
         let mut total_vel = 0.0;
-        for i in self.agents.iter() {
-            total_vel += i.physics.vel.abs().horizontal_sum();
-        }
-        total_vel / self.agents.len() as f32
+        //for i in self.agents.iter() {
+        //    total_vel += i.physics.vel.abs().horizontal_sum();
+        //}
+        //total_vel / self.agents.len() as f32
+        0.0
     }
 
     // Force driven smoothing using spring forces to keep 
@@ -102,65 +105,65 @@ impl<T: AbstractComponent> Network<T> {
         let low = DIST_BOUND;
         let cent = CENTERING;
 
-        for i in 0..self.agents.len() {
-            let posi = self.agents[i].physics.pos;
+        //for i in 0..self.agents.len() {
+        //    let posi = self.agents[i].physics.pos;
 
-            // Spring force
-            let mut f_spring = Vec2::new(0.0, 0.0);
-            for j in self.agents[i].relations.iter() {
-                let posj = self.agents[j.target].physics.pos;
+        //    // Spring force
+        //    let mut f_spring = Vec2::new(0.0, 0.0);
+        //    for j in self.agents[i].relations.iter() {
+        //        let posj = self.agents[j.target].physics.pos;
 
-                let dir = posj - posi;
-                let dist = dir.length();
+        //        let dir = posj - posi;
+        //        let dist = dir.length();
 
-                f_spring += dir.normalized().scale(k * (dist - rest));
-            }
+        //        f_spring += dir.normalized().scale(k * (dist - rest));
+        //    }
 
-            // Coulomb force
-            let mut f_coulomb = Vec2::new(0.0, 0.0);
-            for j in 0..self.agents.len() {
-                if i == j {
-                    continue;
-                }
-                let posj = self.agents[j].physics.pos;
+        //    // Coulomb force
+        //    let mut f_coulomb = Vec2::new(0.0, 0.0);
+        //    for j in 0..self.agents.len() {
+        //        if i == j {
+        //            continue;
+        //        }
+        //        let posj = self.agents[j].physics.pos;
 
-                let dir = posj - posi;
-                let dist = dir.length();
+        //        let dir = posj - posi;
+        //        let dist = dir.length();
 
-                let dist_bound = if dist < low {
-                    low
-                } else {
-                    dist
-                };
+        //        let dist_bound = if dist < low {
+        //            low
+        //        } else {
+        //            dist
+        //        };
 
-                f_coulomb += dir.normalized().scale(-k_e / (dist_bound * dist_bound));
-            }
+        //        f_coulomb += dir.normalized().scale(-k_e / (dist_bound * dist_bound));
+        //    }
 
-            let mut f = f_spring + f_coulomb;
+        //    let mut f = f_spring + f_coulomb;
 
-            // Damping
-            f -= self.agents[i].physics.vel.scale(d);
+        //    // Damping
+        //    f -= self.agents[i].physics.vel.scale(d);
 
-            // Centering force
-            // -> to keep the vertices from floating away
-            f += posi.scale(-cent);
+        //    // Centering force
+        //    // -> to keep the vertices from floating away
+        //    f += posi.scale(-cent);
 
-            self.agents[i].physics.vel += f.scale(dt);
+        //    self.agents[i].physics.vel += f.scale(dt);
 
-            self.agents[i].physics.pos += self.agents[i].physics.vel.scale(dt);
-        }
+        //    self.agents[i].physics.pos += self.agents[i].physics.vel.scale(dt);
+        //}
     }
 
     pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
 
-        for i in self.agents.iter() {
-            for j in i.relations.iter() {
-                renderer.draw_line(i.physics.pos, self.agents[j.target].physics.pos, j.color);
-            }
-        }
-        self.agents.iter().map(|ref a| renderer.draw_circle(a.physics.pos, a.physics.r, a.physics.color)).count();
+        //for i in self.agents.iter() {
+        //    for j in i.relations.iter() {
+        //        renderer.draw_line(i.physics.pos, self.agents[j.target].physics.pos, j.color);
+        //    }
+        //}
+        //self.agents.iter().map(|ref a| renderer.draw_circle(a.physics.pos, a.physics.r, a.physics.color)).count();
 
         renderer.end_frame();
     }
@@ -177,20 +180,28 @@ pub trait AbstractComponent : Copy {
 #[derive(Clone)]
 pub struct Agent<T: AbstractComponent> {
     physics: PhysicsComponent,
-    logic: RefCell<T>,
+    logic: T,
+}
 
-    relations: Vec<Relation>,
+impl<T: AbstractComponent> Agent<T> {
+    fn new(pos: Vec2, r: f32, color: (f32, f32, f32), ac: T) -> Agent<T> {
+        let pc = PhysicsComponent::new(pos, Vec2::new(0.0, 0.0), r, color);
+
+        Agent {
+            physics: pc,
+            logic: ac,
+        }
+    }
 }
 
 #[derive(Copy, Clone)]
 pub struct Relation {
-    target: usize,
     color: (f32, f32, f32),
 }
 
 impl Relation {
-    fn new(target: usize, color: (f32, f32, f32)) -> Relation {
-        Relation { target: target, color: color }
+    fn new(color: (f32, f32, f32)) -> Relation {
+        Relation { color: color }
     }
 }
 
@@ -212,17 +223,4 @@ impl PhysicsComponent {
         }
     }
 
-}
-
-impl<T: AbstractComponent> Agent<T> {
-    fn new(pos: Vec2, r: f32, color: (f32, f32, f32), ac: T) -> Agent<T> {
-        let pc = PhysicsComponent::new(pos, Vec2::new(0.0, 0.0), r, color);
-
-        Agent {
-            physics: pc,
-            logic: RefCell::new(ac),
-            
-            relations: Vec::new(),
-        }
-    }
 }

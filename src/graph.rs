@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::cmp::max;
+use std;
 
 #[derive(Debug)]
 pub struct Graph<T, S> {
@@ -38,6 +39,32 @@ pub struct Edge<S> {
     payload: S,
 }
 
+pub struct NodeIterator<'a, T: 'a, S: 'a> {
+    graph: &'a Graph<T, S>,
+    cur_idx: usize,
+}
+
+impl<'a, T: 'a, S: 'a> Iterator for NodeIterator<'a, T, S> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        println!("next with {}", self.cur_idx);
+        if self.cur_idx >= self.graph.nodes.len() {
+            return None;
+        }
+        println!("ok");
+
+        if self.graph.nodes[self.cur_idx].free {
+            self.cur_idx += 1;
+            self.next()
+        } else {
+            let ref_T = Some(&self.graph.nodes[self.cur_idx].payload);
+            self.cur_idx += 1;
+            ref_T
+        }
+    }
+}
+
 impl<S> Edge<S> {
     fn new(target: NodeIndex, next: Option<EdgeIndex>, payload: S) -> Edge<S> {
         Edge { target: target, next: next, payload: payload }
@@ -56,6 +83,10 @@ impl<T, S> Graph<T, S> {
 
     pub fn num_edges(&self) -> usize {
         max(self.edges.len() - self.edges_free.len(), 0)
+    }
+
+    pub fn nodes_iter<'a>(&'a self) -> NodeIterator<'a, T, S> {
+        NodeIterator { graph: self, cur_idx: 0 }
     }
 
     pub fn add_node(&mut self, payload: T) -> NodeIndex {
@@ -485,5 +516,16 @@ mod tests {
         assert_eq!(g.node_payload(b), &mut 1);
         assert_eq!(g.edge_payload(a, b), Some(&mut 0.123));
         assert_eq!(g.edge_payload(b, a), None);
+    }
+
+    #[test]
+    fn nodes_iter() {
+        let mut g = Graph::<i32, ()>::new();
+
+        for i in 0..5 {
+            g.add_node(i);
+        }
+
+        assert_eq!(g.nodes_iter().collect::<Vec<_>>(), vec![&0, &1, &2, &3, &4]);
     }
 }
