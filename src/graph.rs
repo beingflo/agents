@@ -91,6 +91,7 @@ impl<T, S> Graph<T, S> {
 
         // Remove incoming edges
         for n in self.nodes.iter_mut() {
+            let mut repeat = true;
             let mut edge_idx = n.first;
             let mut prev_idx = edge_idx;
 
@@ -98,40 +99,50 @@ impl<T, S> Graph<T, S> {
                 continue;
             }
 
-            let mut found = false;
-            while let Some(e_idx) = edge_idx {
-                let edge = &mut self.edges[e_idx.0];
+            while repeat {
+                let mut found = false;
+                while let Some(e_idx) = edge_idx {
+                    let edge = &mut self.edges[e_idx.0];
 
-                if edge.target == node_idx {
-                    found = true;
-                    break;
+                    if edge.target == node_idx {
+                        found = true;
+                        break;
+                    }
+
+                    prev_idx = edge_idx;
+                    edge_idx = edge.next;
                 }
 
-                prev_idx = edge_idx;
-                edge_idx = edge.next;
-            }
+                if !found {
+                    repeat = false;
+                    continue;
+                }
 
-            if !found {
-                continue;
-            }
+                let e_next;
+                {
+                    let e_idx = edge_idx.unwrap();
+                    let e = &mut self.edges[e_idx.0];
 
-            let e_next;
-            {
-                let e_idx = edge_idx.unwrap();
-                let e = &mut self.edges[e_idx.0];
+                    e_next = e.next;
 
-                e_next = e.next;
+                    // Bookkeeping
+                    self.edges_free.insert(e_idx);
+                }
 
-                // Bookkeeping
-                self.edges_free.insert(e_idx);
-            }
+                // Resolve first and next references
+                if prev_idx == edge_idx {
+                    n.first = e_next;
+                } else {
+                    // Unwrap won't panic since there was a successor
+                    self.edges[prev_idx.unwrap().0].next = e_next;
+                }
 
-            // Resolve first and next references
-            if prev_idx == edge_idx {
-                n.first = e_next;
-            } else {
-                // Unwrap won't panic since there was a successor
-                self.edges[prev_idx.unwrap().0].next = e_next;
+                if e_next.is_none() {
+                    repeat = false;
+                } else {
+                    edge_idx = e_next;
+                    prev_idx = edge_idx;
+                }
             }
         }
     }
@@ -382,5 +393,29 @@ mod tests {
         let c = g.add_node(());
 
         assert_eq!(g.contains_edge(a, c), false);
+    }
+
+    #[test]
+    fn double_edge() {
+        let mut g = Graph::<(), ()>::new();
+
+        let a = g.add_node(());
+        let b = g.add_node(());
+
+        g.add_edge(a, b, ());
+        g.add_edge(a, b, ());
+
+        assert_eq!(g.num_edges(), 2);
+
+        g.remove_edge(a, b);
+        
+        assert_eq!(g.num_edges(), 1);
+        assert_eq!(g.contains_edge(a, b), true);
+
+        g.add_edge(a, b, ());
+
+        g.remove_node(b);
+
+        assert_eq!(g.num_edges(), 0);
     }
 }
