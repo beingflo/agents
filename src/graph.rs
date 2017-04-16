@@ -471,4 +471,19 @@ mod tests {
         assert_eq!(g.num_nodes(), 1e3 as usize - 1);
         assert_eq!(g.num_edges(), 999*999);
     }
+
+    #[test]
+    fn actual_payload() {
+        let mut g = Graph::<i32, f32>::new();
+
+        let a = g.add_node(0);
+        let b = g.add_node(1);
+
+        g.add_edge(a, b, 0.123);
+
+        assert_eq!(g.node_payload(a), &mut 0);
+        assert_eq!(g.node_payload(b), &mut 1);
+        assert_eq!(g.edge_payload(a, b), Some(&mut 0.123));
+        assert_eq!(g.edge_payload(b, a), None);
+    }
 }
