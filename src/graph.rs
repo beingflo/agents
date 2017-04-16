@@ -98,10 +98,11 @@ impl<T, S> Graph<T, S> {
     }
 
     pub fn remove_edge(&mut self, source: NodeIndex, target: NodeIndex) {
-        // TODO: Fix dangling next when removing
-        let node = &self.nodes[source.0];
+        let node = &mut self.nodes[source.0];
         let mut edge_idx = node.first;
 
+        // Keep track of previous edge to resolve dangling index
+        let mut prev_idx = edge_idx;
         let mut found = false;
         while let Some(e_idx) = edge_idx {
             let edge = &self.edges[e_idx.0];
@@ -110,6 +111,7 @@ impl<T, S> Graph<T, S> {
                 break;
             }
 
+            prev_idx = edge_idx;
             edge_idx = edge.next;
         }
 
@@ -117,20 +119,40 @@ impl<T, S> Graph<T, S> {
             return;
         }
 
-        let e_idx = edge_idx.unwrap();
-        let e = &mut self.edges[e_idx.0];
+        let e_next;
+        {
+            let e_idx = edge_idx.unwrap();
+            let e = &mut self.edges[e_idx.0];
 
-        self.edges_free.insert(e_idx);
-        e.free = true;
+            e_next = e.next;
+
+            // Bookkeeping
+            self.edges_free.insert(e_idx);
+            e.free = true;
+        }
+
+        // Resolve first and next references
+        if prev_idx == edge_idx {
+            node.first = e_next;
+        } else {
+            // Unwrap won't panic since there was a successor
+            self.edges[prev_idx.unwrap().0].next = e_next;
+        }
     }
 
     fn contains_edge(&self, source: NodeIndex, target: NodeIndex) -> bool {
-        let node = &self.nodes[source.0];
-        let mut edge = node.first;
+        let node_source = &self.nodes[source.0];
+        let node_target = &self.nodes[target.0];
+
+        if node_source.free || node_target.free {
+            return true;
+        }
+
+        let mut edge = node_source.first;
 
         while let Some(edge_idx) = edge {
             let e = &self.edges[edge_idx.0];
-            if e.target == target {
+            if e.target == target && !e.free {
                 return true;
             }
 
