@@ -418,4 +418,57 @@ mod tests {
 
         assert_eq!(g.num_edges(), 0);
     }
+
+    #[test]
+    fn delete_nonexisting_node() {
+        let mut g = Graph::<(), ()>::new();
+
+        let a = g.add_node(());
+        g.add_node(());
+
+        g.remove_node(a);
+        g.remove_node(a);
+
+        assert_eq!(g.num_nodes(), 1);
+        assert_eq!(g.num_edges(), 0);
+    }
+
+    #[test]
+    fn delete_nonexisting_edge() {
+        let mut g = Graph::<(), ()>::new();
+
+        let a = g.add_node(());
+        let b = g.add_node(());
+
+        g.add_edge(a, b, ());
+
+        g.remove_edge(b, a);
+
+        assert_eq!(g.num_nodes(), 2);
+        assert_eq!(g.num_edges(), 1);
+    }
+
+    #[test]
+    fn large_total_graph() {
+        let mut g = Graph::<(), ()>::new();
+
+        let mut nodes = Vec::new();
+        for _ in 0..1e3 as usize {
+            nodes.push(g.add_node(()));
+        }
+
+        for i in 0..1e3 as usize {
+            for k in 0..1e3 as usize {
+                g.add_edge(nodes[i], nodes[k], ());
+            }
+        }
+
+        assert_eq!(g.num_nodes(), 1e3 as usize);
+        assert_eq!(g.num_edges(), 1e6 as usize);
+
+        g.remove_node(nodes[257]);
+
+        assert_eq!(g.num_nodes(), 1e3 as usize - 1);
+        assert_eq!(g.num_edges(), 999*999);
+    }
 }
