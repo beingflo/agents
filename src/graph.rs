@@ -163,8 +163,9 @@ impl<T, S> Graph<T, S> {
         let node_source = &self.nodes[source.0];
         let node_target = &self.nodes[target.0];
 
+        // TODO remove stale edge
         if node_source.free || node_target.free {
-            return true;
+            return false;
         }
 
         let mut edge = node_source.first;
@@ -274,4 +275,31 @@ mod tests {
         assert_eq!(g.num_edges(), 10);
     }
 
+    #[test]
+    fn contains() {
+        let mut g = Graph::<(), ()>::new();
+
+        let mut vec = Vec::new();
+        for _ in 0..10 {
+            vec.push(g.add_node(()));
+        }
+
+        for i in 0..10 {
+            for k in 0..10 {
+                g.add_edge(vec[i], vec[k], ());
+           }
+        }
+
+        assert_eq!(g.num_edges(), 100);
+        assert_eq!(g.contains_edge(vec[5], vec[8]), true);
+        assert_eq!(g.contains_edge(vec[8], vec[5]), true);
+
+        g.remove_node(vec[5]);
+
+        assert_eq!(g.num_edges(), 90);
+        assert_eq!(g.contains_edge(vec[5], vec[8]), false);
+        // Incoming edges are not explicitly removed, but 
+        // contains_edge reports correctly
+        assert_eq!(g.contains_edge(vec[8], vec[5]), false);
+    }
 }
