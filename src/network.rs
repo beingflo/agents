@@ -1,5 +1,6 @@
 use rand;
 use rand::Rng;
+use std::fmt::Debug;
 
 use graphics::Renderer;
 use util::Vec2;
@@ -12,7 +13,7 @@ const AGENT_R: f32 = 0.25;
 const REST_LENGTH: f32 = 1.0;
 
 // Damping factor
-const DAMPING: f32 = 0.7;
+const DAMPING: f32 = 0.5;
 
 // Stiffness of spring
 const STIFFNESS: f32 = 1.0;
@@ -57,6 +58,7 @@ impl<T: AbstractComponent> Network<T> {
                     let b = network.nodes[j];
                         
                     network.add_relation(a, b);
+                    network.add_relation(b, a);
                 }
             }
         }
@@ -115,10 +117,6 @@ impl<T: AbstractComponent> Network<T> {
             // Spring force
             let mut f_spring = Vec2::new(0.0, 0.0);
             for &(j_idx, _) in self.graph.edges(i_idx).iter() {
-                if i_idx == j_idx {
-                    continue;
-                }
-
                 let posj = self.graph.node_payload(j_idx).physics.pos;
 
                 let dir = posj - posi;
@@ -129,7 +127,8 @@ impl<T: AbstractComponent> Network<T> {
 
             // Coulomb force
             let mut f_coulomb = Vec2::new(0.0, 0.0);
-            for &(j_idx, _) in self.graph.edges(i_idx).iter() {
+            for j in 0..self.nodes.len() {
+                let j_idx = self.nodes[j];
                 if i_idx == j_idx {
                     continue;
                 }
@@ -188,11 +187,11 @@ fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {
     (b - a) * rng.gen::<f32>() + a
 }
 
-pub trait AbstractComponent : Copy {
+pub trait AbstractComponent : Copy + Debug {
     fn new(&mut rand::ThreadRng) -> Self;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Agent<T: AbstractComponent> {
     physics: PhysicsComponent,
     logic: T,
@@ -209,7 +208,7 @@ impl<T: AbstractComponent> Agent<T> {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct Relation {
     color: (f32, f32, f32),
 }
@@ -220,7 +219,7 @@ impl Relation {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub struct PhysicsComponent {
     pos: Vec2,
     vel: Vec2,
