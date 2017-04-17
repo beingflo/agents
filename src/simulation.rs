@@ -14,18 +14,19 @@ const VEL_THRESH: f32 = 0.001;
 const IT_THRESH: usize = 2_000;
 
 pub struct Simulation {
-    n: usize,
-    p: f32,
-
     renderer: Renderer,
     network: Network<LogicComponent>,
     input: InputHandler,
+
+    n: usize,
+    p: f32,
+
     freeze: bool,
 }
 
 impl Simulation {
-    pub fn new(n: usize, d: f32) -> Simulation {
-        let mut network = Network::random(n, d);
+    pub fn new(n: usize, p: f32) -> Simulation {
+        let mut network = Network::random(n, p);
         network.physics_tick_till_rest(TIME_STEP, VEL_THRESH, IT_THRESH);
 
         let renderer = Renderer::new();
@@ -34,7 +35,7 @@ impl Simulation {
 
         Simulation {
             n: n,
-            p: d,
+            p: p,
             renderer: renderer,
             network: network,
             input: input,
