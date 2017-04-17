@@ -180,7 +180,7 @@ impl<T, S> Graph<T, S> {
     }
 
     pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, payload: S) {
-        if self.nodes[source.0].free || self.nodes[source.0].free {
+        if self.nodes[source.0].free || self.nodes[target.0].free {
             return;
         }
 
