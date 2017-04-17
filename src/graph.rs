@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 use std::cmp::max;
-use std;
 
 #[derive(Debug)]
 pub struct Graph<T, S> {
@@ -48,19 +47,17 @@ impl<'a, T: 'a, S: 'a> Iterator for NodeIterator<'a, T, S> {
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("next with {}", self.cur_idx);
         if self.cur_idx >= self.graph.nodes.len() {
             return None;
         }
-        println!("ok");
 
         if self.graph.nodes[self.cur_idx].free {
             self.cur_idx += 1;
             self.next()
         } else {
-            let ref_T = Some(&self.graph.nodes[self.cur_idx].payload);
+            let ref_t = Some(&self.graph.nodes[self.cur_idx].payload);
             self.cur_idx += 1;
-            ref_T
+            ref_t
         }
     }
 }
@@ -87,6 +84,10 @@ impl<T, S> Graph<T, S> {
 
     pub fn nodes_iter<'a>(&'a self) -> NodeIterator<'a, T, S> {
         NodeIterator { graph: self, cur_idx: 0 }
+    }
+
+    pub fn nodes_mut(&mut self) -> Vec<&mut T> {
+        self.nodes.iter_mut().filter(|x| !x.free).map(|x| &mut x.payload).collect()
     }
 
     pub fn add_node(&mut self, payload: T) -> NodeIndex {
@@ -242,7 +243,21 @@ impl<T, S> Graph<T, S> {
         }
     }
 
-    fn contains_edge(&self, source: NodeIndex, target: NodeIndex) -> bool {
+    pub fn edges(&self, node: NodeIndex) -> Vec<(NodeIndex, &S)> {
+        let mut ret = Vec::new();
+        let mut edge = self.nodes[node.0].first;
+
+        while let Some(edge_idx) = edge {
+            let e = &self.edges[edge_idx.0];
+            ret.push((e.target, &e.payload));
+
+            edge = e.next;
+        }
+
+        ret
+    }
+
+    pub fn contains_edge(&self, source: NodeIndex, target: NodeIndex) -> bool {
         let source_node = &self.nodes[source.0];
         let target_node = &self.nodes[target.0];
 
@@ -264,11 +279,35 @@ impl<T, S> Graph<T, S> {
         false
     }
 
-    fn node_payload(&mut self, node: NodeIndex) -> &mut T {
+    pub fn node_payload(&self, node: NodeIndex) -> &T {
+        &self.nodes[node.0].payload
+    }
+
+    pub fn node_payload_mut(&mut self, node: NodeIndex) -> &mut T {
         &mut self.nodes[node.0].payload
     }
 
-    fn edge_payload(&mut self, source: NodeIndex, target: NodeIndex) -> Option<&mut S> {
+    pub fn edge_payload(&self, source: NodeIndex, target: NodeIndex) -> Option<&S> {
+        let source_node = &self.nodes[source.0];
+        let target_node = &self.nodes[target.0];
+
+        if source_node.free || target_node.free {
+            return None;
+        }
+
+        let mut edge = source_node.first;
+
+        while let Some(edge_idx) = edge {
+            if self.edges[edge_idx.0].target == target {
+                return Some(&self.edges[edge_idx.0].payload);
+            }
+            edge = self.edges[edge_idx.0].next;
+        }
+
+        None
+    }
+
+    pub fn edge_payload_mut(&mut self, source: NodeIndex, target: NodeIndex) -> Option<&mut S> {
         let source_node = &self.nodes[source.0];
         let target_node = &self.nodes[target.0];
 
@@ -512,9 +551,9 @@ mod tests {
 
         g.add_edge(a, b, 0.123);
 
-        assert_eq!(g.node_payload(a), &mut 0);
-        assert_eq!(g.node_payload(b), &mut 1);
-        assert_eq!(g.edge_payload(a, b), Some(&mut 0.123));
+        assert_eq!(g.node_payload(a), &0);
+        assert_eq!(g.node_payload_mut(b), &mut 1);
+        assert_eq!(g.edge_payload_mut(a, b), Some(&mut 0.123));
         assert_eq!(g.edge_payload(b, a), None);
     }
 
@@ -527,5 +566,21 @@ mod tests {
         }
 
         assert_eq!(g.nodes_iter().collect::<Vec<_>>(), vec![&0, &1, &2, &3, &4]);
+        assert_eq!(g.nodes_mut(), vec![&mut 0, &mut 1, &mut 2, &mut 3, &mut 4]);
+    }
+
+    #[test]
+    fn edges() {
+        let mut g = Graph::<(), i32>::new();
+
+        let a = g.add_node(());
+        let b = g.add_node(());
+        let c = g.add_node(());
+
+        g.add_edge(a, b, 23);
+        g.add_edge(a, c, 13);
+        g.add_edge(b, c, 31);
+
+        assert_eq!(g.edges(a), vec![(c, &13), (b, &23)]);
     }
 }

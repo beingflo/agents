@@ -1,12 +1,10 @@
-use std::cell::RefCell;
-
 use rand;
 use rand::Rng;
 
 use graphics::Renderer;
 use util::Vec2;
 
-use graph::{ Graph, Node, Edge, NodeIndex };
+use graph::{ Graph, NodeIndex };
 
 const AGENT_R: f32 = 0.25;
 
@@ -30,6 +28,8 @@ const CENTERING: f32 = 0.05;
 
 pub struct Network<T: AbstractComponent> {
     graph: Graph<Agent<T>, Relation>,
+    nodes: Vec<NodeIndex>,
+
     rng: rand::ThreadRng,
 }
 
@@ -37,6 +37,7 @@ impl<T: AbstractComponent> Network<T> {
     pub fn new() -> Network<T> {
         Network {
             graph: Graph::new(),
+            nodes: Vec::new(),
             rng: rand::thread_rng(),
         }
     }
@@ -44,15 +45,18 @@ impl<T: AbstractComponent> Network<T> {
     pub fn random(n: usize, p: f32) -> Network<T> {
         let mut network = Network::new();
 
-        let mut nodes = Vec::new();
         for _ in 0..n {
-            nodes.push(network.add_agent());
+            let idx = network.add_agent();
+            network.nodes.push(idx);
         }
 
         for i in 0..n {
             for j in i+1..n {
                 if get_rand(&mut network.rng, 0.0, 1.0) < p {
-                    network.add_relation(nodes[i], nodes[j]);
+                    let a = network.nodes[i];
+                    let b = network.nodes[j];
+                        
+                    network.add_relation(a, b);
                 }
             }
         }
@@ -87,11 +91,10 @@ impl<T: AbstractComponent> Network<T> {
 
     fn average_vel(&self) -> f32 {
         let mut total_vel = 0.0;
-        //for i in self.agents.iter() {
-        //    total_vel += i.physics.vel.abs().horizontal_sum();
-        //}
-        //total_vel / self.agents.len() as f32
-        0.0
+        for i in self.graph.nodes_iter() {
+            total_vel += i.physics.vel.abs().horizontal_sum();
+        }
+        total_vel / self.graph.num_nodes() as f32
     }
 
     // Force driven smoothing using spring forces to keep 
@@ -105,65 +108,77 @@ impl<T: AbstractComponent> Network<T> {
         let low = DIST_BOUND;
         let cent = CENTERING;
 
-        //for i in 0..self.agents.len() {
-        //    let posi = self.agents[i].physics.pos;
+        for i in 0..self.nodes.len() {
+            let i_idx = self.nodes[i];
+            let posi = self.graph.node_payload(i_idx).physics.pos;
 
-        //    // Spring force
-        //    let mut f_spring = Vec2::new(0.0, 0.0);
-        //    for j in self.agents[i].relations.iter() {
-        //        let posj = self.agents[j.target].physics.pos;
+            // Spring force
+            let mut f_spring = Vec2::new(0.0, 0.0);
+            for &(j_idx, _) in self.graph.edges(i_idx).iter() {
+                if i_idx == j_idx {
+                    continue;
+                }
 
-        //        let dir = posj - posi;
-        //        let dist = dir.length();
+                let posj = self.graph.node_payload(j_idx).physics.pos;
 
-        //        f_spring += dir.normalized().scale(k * (dist - rest));
-        //    }
+                let dir = posj - posi;
+                let dist = dir.length();
 
-        //    // Coulomb force
-        //    let mut f_coulomb = Vec2::new(0.0, 0.0);
-        //    for j in 0..self.agents.len() {
-        //        if i == j {
-        //            continue;
-        //        }
-        //        let posj = self.agents[j].physics.pos;
+                f_spring += dir.normalized().scale(k * (dist - rest));
+            }
 
-        //        let dir = posj - posi;
-        //        let dist = dir.length();
+            // Coulomb force
+            let mut f_coulomb = Vec2::new(0.0, 0.0);
+            for &(j_idx, _) in self.graph.edges(i_idx).iter() {
+                if i_idx == j_idx {
+                    continue;
+                }
 
-        //        let dist_bound = if dist < low {
-        //            low
-        //        } else {
-        //            dist
-        //        };
+                let posj = self.graph.node_payload(j_idx).physics.pos;
 
-        //        f_coulomb += dir.normalized().scale(-k_e / (dist_bound * dist_bound));
-        //    }
+                let dir = posj - posi;
+                let dist = dir.length();
 
-        //    let mut f = f_spring + f_coulomb;
+                let dist_bound = if dist < low {
+                    low
+                } else {
+                    dist
+                };
 
-        //    // Damping
-        //    f -= self.agents[i].physics.vel.scale(d);
+                f_coulomb += dir.normalized().scale(-k_e / (dist_bound * dist_bound));
+            }
 
-        //    // Centering force
-        //    // -> to keep the vertices from floating away
-        //    f += posi.scale(-cent);
+            let mut f = f_spring + f_coulomb;
 
-        //    self.agents[i].physics.vel += f.scale(dt);
+            // Damping
+            f -= self.graph.node_payload(i_idx).physics.vel.scale(d);
 
-        //    self.agents[i].physics.pos += self.agents[i].physics.vel.scale(dt);
-        //}
+            // Centering force
+            // -> to keep the vertices from floating away
+            f += posi.scale(-cent);
+
+            self.graph.node_payload_mut(i_idx).physics.vel += f.scale(dt);
+
+            self.graph.node_payload_mut(i_idx).physics.pos += self.graph.node_payload(i_idx).physics.vel.scale(dt);
+        }
     }
 
     pub fn draw(&self, renderer: &mut Renderer) {
         renderer.begin_frame();
         renderer.clear_color(1.0, 1.0, 1.0);
 
-        //for i in self.agents.iter() {
-        //    for j in i.relations.iter() {
-        //        renderer.draw_line(i.physics.pos, self.agents[j.target].physics.pos, j.color);
-        //    }
-        //}
-        //self.agents.iter().map(|ref a| renderer.draw_circle(a.physics.pos, a.physics.r, a.physics.color)).count();
+        for i_idx in self.nodes.iter() {
+            let posi = self.graph.node_payload(*i_idx).physics.pos;
+            for &(j_idx, edge_attrib) in self.graph.edges(*i_idx).iter() {
+                let posj = self.graph.node_payload(j_idx).physics.pos;
+                renderer.draw_line(posi, posj, edge_attrib.color);
+            }
+        }
+
+        for i_idx in self.nodes.iter() {
+            let node_i = self.graph.node_payload(*i_idx);
+            renderer.draw_circle(node_i.physics.pos, node_i.physics.r, node_i.physics.color)
+        }
 
         renderer.end_frame();
     }
