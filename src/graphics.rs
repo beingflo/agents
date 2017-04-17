@@ -27,7 +27,7 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let display = glutin::WindowBuilder::new().with_title("agents").build_glium().unwrap();
+        let display = glutin::WindowBuilder::new().with_title("agents").with_multisampling(8).build_glium().unwrap();
         let circle_mesh = CircleMesh::new(&display);
         let line_mesh = LineMesh::new(&display);
         let program = make_program(&display);
@@ -140,7 +140,7 @@ struct CircleMesh {
     indices: glium::index::NoIndices,
 }
 
-const CIRCLE_RESOLUTION: i32 = 36;
+const CIRCLE_RESOLUTION: i32 = 18;
 
 impl CircleMesh {
     fn new(display: &GlutinFacade) -> Self {
