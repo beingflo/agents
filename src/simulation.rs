@@ -32,7 +32,6 @@ impl Simulation {
         let renderer = Renderer::new();
         let input = InputHandler::new();
 
-
         Simulation {
             n: n,
             p: p,

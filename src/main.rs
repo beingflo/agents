@@ -18,6 +18,7 @@ const DEGREE_P: f32 = 0.015;
 
 fn main() {
     let (n, p) = get_args();
+
     let mut simulation = Simulation::new(n, p);
 
     simulation.run();
