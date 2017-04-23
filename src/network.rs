@@ -1,11 +1,13 @@
 use rand;
 use rand::Rng;
 use std::fmt::Debug;
+use std::sync::mpsc;
 
 use graphics::Renderer;
 use util::Vec2;
 
-use graph::{ Graph, NodeIndex };
+use graph::Graph;
+pub use graph::NodeIndex;
 
 const AGENT_R: f32 = 0.25;
 
@@ -58,7 +60,6 @@ impl<T: AbstractComponent> Network<T> {
                     let b = network.nodes[j];
                         
                     network.add_relation(a, b);
-                    network.add_relation(b, a);
                 }
             }
         }
@@ -75,8 +76,61 @@ impl<T: AbstractComponent> Network<T> {
                          )
     }
 
+    pub fn remove_agent(&mut self, idx: NodeIndex) {
+        self.graph.remove_node(idx);
+        let id = self.nodes.iter().position(|x| *x == idx);
+
+        if let Some(idx) = id {
+            self.nodes.remove(idx);
+        }
+    }
+
     pub fn add_relation(&mut self, src: NodeIndex, dest: NodeIndex) {
         self.graph.add_edge(src, dest, Relation::new((0.0, 0.0, 0.0)));
+        self.graph.add_edge(dest, src, Relation::new((0.0, 0.0, 0.0)));
+    }
+
+    pub fn remove_relation(&mut self, src: NodeIndex, dest: NodeIndex) {
+        self.graph.remove_edge(src, dest);
+        self.graph.remove_edge(dest, src);
+    }
+
+    pub fn logic_tick<F>(&mut self, f: F) where F: Fn(&mpsc::Sender<NetworkEvent>, (NodeIndex, &T), &[(NodeIndex, &T)]) {
+        let (tx, rx) = mpsc::channel();
+
+        for node in self.nodes.iter() {
+            f(&tx, (*node, &self.graph.node_payload(*node).logic), &self.graph.neighbors_iter(node).map(|(idx, ref agent)| (idx, &agent.logic)).collect::<Vec<_>>()[..]);
+        }
+
+        for e in rx.try_iter() {
+            self.handle_event(e);
+        }
+    }
+
+    pub fn look_tick<F>(&mut self, f: F) where F: Fn(&T, &mut PhysicsComponent) {
+        for i in 0..self.nodes.len() {
+            let payload = self.graph.node_payload_mut(self.nodes[i]);
+
+            f(&payload.logic, &mut payload.physics);
+        }
+    }
+
+    fn handle_event(&mut self, event: NetworkEvent) {
+        match event {
+            NetworkEvent::AddAgent => {
+                let idx = self.add_agent();
+                self.nodes.push(idx);
+            },
+            NetworkEvent::RemoveAgent(x) => {
+                self.remove_agent(x);
+            },
+            NetworkEvent::AddRelation(x, y) => {
+                self.add_relation(x, y);
+            },
+            NetworkEvent::RemoveRelation(x, y) => {
+                self.remove_relation(x, y);
+            },
+        }
     }
 
     pub fn physics_tick_till_rest(&mut self, dt: f32, thresh: f32, max: usize) {
@@ -181,6 +235,13 @@ impl<T: AbstractComponent> Network<T> {
 
         renderer.end_frame();
     }
+}
+
+pub enum NetworkEvent{
+    AddAgent,
+    RemoveAgent(NodeIndex),
+    AddRelation(NodeIndex, NodeIndex),
+    RemoveRelation(NodeIndex, NodeIndex),
 }
 
 fn get_rand(rng: &mut rand::ThreadRng, a: f32, b: f32) -> f32 {

@@ -62,6 +62,27 @@ impl<'a, T: 'a, S: 'a> Iterator for NodeIterator<'a, T, S> {
     }
 }
 
+pub struct NeighborIterator<'a, T: 'a, S: 'a> {
+    graph: &'a Graph<T, S>,
+    cur_edge: Option<EdgeIndex>,
+}
+
+impl<'a, T: 'a, S: 'a> Iterator for NeighborIterator<'a, T, S> {
+    type Item = (NodeIndex, &'a T);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(edge_idx) = self.cur_edge {
+            let e = &self.graph.edges[edge_idx.0];
+            let n = &self.graph.nodes[e.target.0];
+            self.cur_edge = e.next;
+
+            Some((e.target, &n.payload))
+        } else {
+            None
+        }
+    }
+}
+
 impl<S> Edge<S> {
     fn new(target: NodeIndex, next: Option<EdgeIndex>, payload: S) -> Edge<S> {
         Edge { target: target, next: next, payload: payload }
@@ -89,6 +110,25 @@ impl<T, S> Graph<T, S> {
     pub fn nodes_mut(&mut self) -> Vec<&mut T> {
         self.nodes.iter_mut().filter(|x| !x.free).map(|x| &mut x.payload).collect()
     }
+
+    pub fn neighbors_iter<'a>(&'a self, src: &NodeIndex) -> NeighborIterator<'a, T, S> {
+        NeighborIterator { graph: self, cur_edge: self.nodes[src.0].first }
+    }
+
+    pub fn edges(&self, node: NodeIndex) -> Vec<(NodeIndex, &S)> {
+        let mut ret = Vec::new();
+        let mut edge = self.nodes[node.0].first;
+
+        while let Some(edge_idx) = edge {
+            let e = &self.edges[edge_idx.0];
+            ret.push((e.target, &e.payload));
+
+            edge = e.next;
+        }
+
+        ret
+    }
+
 
     pub fn add_node(&mut self, payload: T) -> NodeIndex {
         if self.nodes_free.is_empty() {
@@ -241,20 +281,6 @@ impl<T, S> Graph<T, S> {
             // Unwrap won't panic since there was a successor
             self.edges[prev_idx.unwrap().0].next = e_next;
         }
-    }
-
-    pub fn edges(&self, node: NodeIndex) -> Vec<(NodeIndex, &S)> {
-        let mut ret = Vec::new();
-        let mut edge = self.nodes[node.0].first;
-
-        while let Some(edge_idx) = edge {
-            let e = &self.edges[edge_idx.0];
-            ret.push((e.target, &e.payload));
-
-            edge = e.next;
-        }
-
-        ret
     }
 
     pub fn contains_edge(&self, source: NodeIndex, target: NodeIndex) -> bool {
