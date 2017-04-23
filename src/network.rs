@@ -1,11 +1,13 @@
 use rand;
 use rand::Rng;
 use std::fmt::Debug;
+use std::sync::mpsc;
 
 use graphics::Renderer;
 use util::Vec2;
 
-use graph::{ Graph, NodeIndex };
+use graph::Graph;
+pub use graph::NodeIndex;
 
 const AGENT_R: f32 = 0.25;
 
@@ -78,11 +80,9 @@ impl<T: AbstractComponent> Network<T> {
         self.graph.remove_node(idx);
         let id = self.nodes.iter().position(|x| *x == idx);
 
-        if let None = id {
-            panic!("NodeIndex not present");
+        if let Some(idx) = id {
+            self.nodes.remove(idx);
         }
-
-        self.nodes.remove(id.unwrap());
     }
 
     pub fn add_relation(&mut self, src: NodeIndex, dest: NodeIndex) {
@@ -95,11 +95,23 @@ impl<T: AbstractComponent> Network<T> {
         self.graph.remove_edge(dest, src);
     }
 
-    pub fn logic_tick<F>(&mut self, f: F) where F: Fn(&[(NodeIndex, &T)]) -> NetworkEvent {
-        for i in 0..self.nodes.len() {
-            let event = f(&self.graph.neighbors_iter(&self.nodes[i]).map(|(idx, ref agent)| (idx, &agent.logic)).collect::<Vec<_>>()[..]);
+    pub fn logic_tick<F>(&mut self, f: F) where F: Fn(&mpsc::Sender<NetworkEvent>, (NodeIndex, &T), &[(NodeIndex, &T)]) {
+        let (tx, rx) = mpsc::channel();
 
-            self.handle_event(event);
+        for node in self.nodes.iter() {
+            f(&tx, (*node, &self.graph.node_payload(*node).logic), &self.graph.neighbors_iter(node).map(|(idx, ref agent)| (idx, &agent.logic)).collect::<Vec<_>>()[..]);
+        }
+
+        for e in rx.try_iter() {
+            self.handle_event(e);
+        }
+    }
+
+    pub fn look_tick<F>(&mut self, f: F) where F: Fn(&T, &mut PhysicsComponent) {
+        for i in 0..self.nodes.len() {
+            let payload = self.graph.node_payload_mut(self.nodes[i]);
+
+            f(&payload.logic, &mut payload.physics);
         }
     }
 
