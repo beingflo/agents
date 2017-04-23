@@ -44,12 +44,17 @@ impl Simulation {
 
     pub fn run(&mut self) {
         let mut physics_ticker = Ticker::new(2);
+        let mut logic_ticker = Ticker::new(10);
 
         loop {
             self.network.draw(&mut self.renderer);
 
             if physics_ticker.tick() {
                 self.network.physics_tick(TIME_STEP);
+            }
+
+            if logic_ticker.tick() {
+                //self.network.logic_tick();
             }
 
             self.input.handle_events(self.renderer.display.poll_events());
@@ -93,7 +98,6 @@ struct LogicComponent {
     meat: u32,
 
     alive: bool,
-    mark: bool,
 }
 
 impl AbstractComponent for LogicComponent {
@@ -105,6 +109,6 @@ impl AbstractComponent for LogicComponent {
             ProductionType::Gatherer
         };
 
-        LogicComponent { ptype: ptype, plant: 10, meat: 10, alive: true, mark: false }
+        LogicComponent { ptype: ptype, plant: 10, meat: 10, alive: true }
     }
 }
