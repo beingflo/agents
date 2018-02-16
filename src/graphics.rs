@@ -4,14 +4,17 @@ use std::io::prelude::*;
 
 use util::Vec2;
 
-use glium::{self, DisplayBuild, glutin, Surface};
-use glium::backend::glutin_backend::GlutinFacade;
+use glium::{self, glutin, Surface};
+use glium::backend::glutin::Display;
+use glium::glutin::EventsLoop;
 
 use input::InputEvent;
 
 
 pub struct Renderer {
-    pub display: GlutinFacade,
+    pub display: Display,
+    pub event_loop: EventsLoop,
+
     program: glium::Program,
 
     circle_mesh: CircleMesh,
@@ -27,13 +30,21 @@ pub struct Renderer {
 
 impl Renderer {
     pub fn new() -> Renderer {
-        let display = glutin::WindowBuilder::new().with_title("agents").with_multisampling(8).build_glium().unwrap();
+        let event_loop = glutin::EventsLoop::new();
+
+        let window = glutin::WindowBuilder::new().with_title("agents");
+
+        let context = glutin::ContextBuilder::new().with_multisampling(8);
+
+        let display = glium::Display::new(window, context, &event_loop).unwrap();
+
         let circle_mesh = CircleMesh::new(&display);
         let line_mesh = LineMesh::new(&display);
         let program = make_program(&display);
 
         Renderer {
             display: display,
+            event_loop: event_loop,
             program: program,
             circle_mesh: circle_mesh,
             line_mesh: line_mesh,
@@ -143,7 +154,7 @@ struct CircleMesh {
 const CIRCLE_RESOLUTION: i32 = 18;
 
 impl CircleMesh {
-    fn new(display: &GlutinFacade) -> Self {
+    fn new(display: &Display) -> Self {
         use std::f32;
 
         let segment_angle = 2.0 * f32::consts::PI / CIRCLE_RESOLUTION as f32;
@@ -180,7 +191,7 @@ struct LineMesh {
 }
 
 impl LineMesh {
-    fn new(display: &GlutinFacade) -> Self {
+    fn new(display: &Display) -> Self {
         let p1 = Vertex { position: [0.0, 0.0] };
         let p2 = Vertex { position: [0.0, 1.0] };
 
@@ -258,7 +269,7 @@ fn get_model_line(p1: Vec2, p2: Vec2) -> [[f32; 4]; 4] {
     model
 }
 
-fn make_program(display: &GlutinFacade) -> glium::Program {
+fn make_program(display: &Display) -> glium::Program {
     let vertex_shader_src = load_shader("src/shader/vert_shader.glslv");
     let fragment_shader_src = load_shader("src/shader/frag_shader.glslf");
 

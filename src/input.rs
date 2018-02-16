@@ -1,6 +1,7 @@
 use glium::glutin;
-use glium::backend::glutin_backend::PollEventsIter;
 use glium::glutin::VirtualKeyCode as VK;
+use glium::glutin::Event;
+use glium::glutin::KeyboardInput;
 
 use std::collections::HashSet;
 
@@ -10,8 +11,8 @@ pub struct InputHandler {
 
     zoom: f32,
 
-    mouse_pos: (i32, i32),
-    mouse_pos_last_pressed: (i32, i32),
+    mouse_pos: (f64, f64),
+    mouse_pos_last_pressed: (f64, f64),
 
     mouse_scroll_sensitivity: f32,
     mouse_move_sensitivity: f32,
@@ -32,31 +33,36 @@ impl InputHandler {
             keyset: HashSet::new(),
             mouseset: [false; 2],
             zoom: 0.0,
-            mouse_pos: (0, 0),
-            mouse_pos_last_pressed: (0, 0),
+            mouse_pos: (0.0, 0.0),
+            mouse_pos_last_pressed: (0.0, 0.0),
             mouse_scroll_sensitivity: 0.2,
             mouse_move_sensitivity: 0.0026,
         }
     }
 
-    pub fn handle_events(&mut self, events: PollEventsIter) {
-        use glium::glutin::Event;
+    pub fn handle_events(&mut self, event: Event) {
+        use glium::glutin::Event::WindowEvent;
+        use glium::glutin::WindowEvent::*;
 
-        for e in events {
-            match e {
-                Event::Closed => { self.keyset.insert(VK::Escape); },
-                Event::MouseMoved(x, y) => self.mouse_moved_input(x, y),
-                Event::MouseInput(state, button) => self.mouse_click_input(state, button),
-                Event::MouseWheel(delta, _) => self.mouse_wheel_input(delta),
-                Event::KeyboardInput(state, raw, code) => self.key_input(state, raw, code),
-                _ => (),
-            };
-        }
-
+        match event {
+            WindowEvent{event: e, ..} => {
+                match e {
+                    Closed => { self.keyset.insert(VK::Escape); },
+                    CursorMoved {position: (x,y), ..} => self.mouse_moved_input(x, y),
+                    MouseInput { state, button, ..} => self.mouse_click_input(state, button),
+                    MouseWheel {delta, ..} => self.mouse_wheel_input(delta),
+                    KeyboardInput {input, ..} => self.key_input(input),
+                    _ => (),
+                };
+            },
+            _ => ()
+        };
     }
 
-    fn key_input(&mut self, state: glutin::ElementState, raw: u8, code: Option<VK>) {
+    fn key_input(&mut self, input: KeyboardInput) {
         use glium::glutin::ElementState as ES;
+
+        let KeyboardInput { scancode: raw, state, virtual_keycode: code, .. } = input;
 
         match (state, raw, code) {
             (ES::Pressed, _, Some(virtcode)) => { self.keyset.insert(virtcode); },
@@ -66,7 +72,7 @@ impl InputHandler {
         };
     }
 
-    fn mouse_moved_input(&mut self, x: i32, y: i32) {
+    fn mouse_moved_input(&mut self, x: f64, y: f64) {
         self.mouse_pos = (x, y);
     }
 

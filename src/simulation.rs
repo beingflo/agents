@@ -79,7 +79,13 @@ impl Simulation {
                 self.network.look_tick(&update_look);
             }
 
-            self.input.handle_events(self.renderer.display.poll_events());
+            {
+                let renderer = &mut self.renderer;
+                let input = &mut self.input;
+
+                renderer.event_loop.poll_events(|e| input.handle_events(e));
+            }
+
             let events = self.input.get_events();
             if self.assign_events(events) {
                 return;
